@@ -51,6 +51,8 @@ body {
 /* Navigation Bar */
 .navbar {
   background-color: var(--nav-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-color);
   padding: 16px 20px;
   display: flex;

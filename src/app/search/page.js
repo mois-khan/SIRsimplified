@@ -39,7 +39,7 @@ export default function SearchPage() {
         Search for your details securely using your <strong>EPIC Number</strong> or <strong>House Number</strong>.
       </p>
 
-      <form onSubmit={handleSearch} style={{ display: "flex", gap: "12px", marginBottom: "32px" }}>
+      <form onSubmit={handleSearch} style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "32px" }}>
         <input 
           type="text" 
           className="form-input" 
@@ -47,13 +47,13 @@ export default function SearchPage() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           required
-          style={{ margin: 0, flex: 1 }}
+          style={{ margin: 0, flex: "1 1 200px", minWidth: 0 }}
         />
         <button 
           type="submit" 
           className="btn-primary" 
           disabled={isSearching}
-          style={{ width: "auto", margin: 0, padding: "0 24px" }}
+          style={{ flex: "0 1 auto", margin: 0, padding: "12px 24px" }}
         >
           {isSearching ? "Searching..." : "Search"}
         </button>

@@ -36,7 +36,7 @@ export default function Navbar() {
         <div className="desktop-nav">
           <Link href="/" className="nav-tab">Home</Link>
           <Link href="/search" className="nav-tab">Search 2002</Link>
-          <Link href="/leaders" className="nav-tab">Our Leaders</Link>
+          {/* <Link href="/leaders" className="nav-tab">Our Leaders</Link> */}
         </div>
 
         <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle Dark Mode">
@@ -84,9 +84,9 @@ export default function Navbar() {
             <Link href="/search" className="mobile-link" onClick={() => setMenuOpen(false)}>
               Search 2002 Roll
             </Link>
-            <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
+            {/* <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
               Our Leaders
-            </Link>
+            </Link> */}
           </div>
         </div>
       )}

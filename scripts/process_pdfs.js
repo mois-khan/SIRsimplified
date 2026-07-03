@@ -49,17 +49,57 @@ async function processFile(filePath) {
                 rows.sort((a, b) => a.y - b.y);
                 
                 rows.forEach(row => {
-                    if (row.y < 3.0) return; // Skip the headers
+                    let sl_no = null, section_no = null, house_no = null, name = null;
+                    let relation_type = null, relative_name = null, gender = null, age = null, epic_no = null;
                     
-                    let sl_no = null, house_no = null, name = null, epic_no = null;
+                    let last_house_x = 0, last_name_x = 0, last_rel_x = 0;
                     
                     row.items.forEach(item => {
-                        if (item.x > 3 && item.x < 5.5) sl_no = item.text;
-                        if (item.x > 8 && item.x < 11.5) house_no = item.text;
-                        if (item.x > 11.5 && item.x < 20.0) {
-                            name = name ? name + " " + item.text : item.text;
+                        // Serial Number
+                        if (item.x > 3.0 && item.x < 6.0) sl_no = item.text;
+                        
+                        // Section Number
+                        if (item.x > 6.0 && item.x < 8.0) section_no = item.text;
+                        
+                        // House Number
+                        if (item.x > 8.0 && item.x < 12.0) {
+                            if (!house_no) house_no = item.text;
+                            else if (item.x - last_house_x > 1.5) house_no += " " + item.text;
+                            else house_no += item.text;
+                            last_house_x = item.x;
                         }
-                        if (item.x > 31.0 && item.text !== "-" && item.text !== "Page") epic_no = item.text;
+                        
+                        // Elector Name
+                        if (item.x > 12.0 && item.x < 20.0) {
+                            if (!name) name = item.text;
+                            else if (item.x - last_name_x > 1.5) name += " " + item.text;
+                            else name += item.text; 
+                            last_name_x = item.x;
+                        }
+                        
+                        // Relation Type (Father/Husband/etc)
+                        if (item.x > 20.0 && item.x < 22.5) {
+                            relation_type = item.text;
+                        }
+                        
+                        // Relative Name
+                        if (item.x > 22.5 && item.x < 27.5) {
+                            if (!relative_name) relative_name = item.text;
+                            else if (item.x - last_rel_x > 1.5) relative_name += " " + item.text;
+                            else relative_name += item.text; 
+                            last_rel_x = item.x;
+                        }
+                        
+                        // Gender
+                        if (item.x > 27.5 && item.x < 29.5) gender = item.text;
+                        
+                        // Age
+                        if (item.x > 29.5 && item.x < 31.5) age = item.text;
+                        
+                        // EPIC Number
+                        if (item.x > 31.5 && item.text !== "-" && item.text !== "Page") {
+                            epic_no = (epic_no || "") + item.text.replace(/\s+/g, '');
+                        }
                     });
                     
                     // Ignore footer lines like "55 of 1 Page"
@@ -67,11 +107,16 @@ async function processFile(filePath) {
                     
                     if (sl_no || name) {
                         allElectors.push({ 
-                            serial_no: sl_no === "-" ? null : sl_no, 
+                            serial_no: sl_no === "-" ? null : sl_no,
+                            section_no: section_no === "-" ? null : section_no,
                             house_no: house_no === "-" ? null : house_no, 
-                            name, 
+                            name: name,
+                            relation_type: relation_type === "-" ? null : relation_type,
+                            relative_name: relative_name,
+                            gender: gender,
+                            age: age,
                             epic_no: epic_no === "-" ? null : epic_no,
-                            part_no 
+                            part_no: part_no
                         });
                     }
                 });

@@ -31,10 +31,19 @@ export default function LeadersTribute() {
   return (
     <div className={styles.pageWrapper}>
       <header className={styles.hero}>
-        <h1 className={styles.heroTitle}>Our Leadership</h1>
-        <p className={styles.heroSubtitle}>
-          Dedicated to service and progress. Honoring the leaders who work tirelessly to ensure every citizen is correctly enumerated and represented.
-        </p>
+        <div className={styles.heroContent}>
+          <h1 className={styles.heroTitle}>Our Leadership</h1>
+          <p className={styles.heroSubtitle}>
+            Dedicated to service and progress. Honoring the leaders who work tirelessly to ensure every citizen is correctly enumerated.
+          </p>
+          <Link href="/" className={styles.ctaButton}>
+            Submit Your Details
+            <svg className={styles.ctaIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </Link>
+        </div>
       </header>
 
       <div className={styles.grid}>
@@ -71,17 +80,6 @@ export default function LeadersTribute() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div className={styles.ctaSection}>
-        <h3 className={styles.ctaText}>Need Assistance with Your Enumeration Form?</h3>
-        <Link href="/" className={styles.ctaButton}>
-          Submit Your Details
-          <svg className={styles.ctaIcon} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-          </svg>
-        </Link>
       </div>
     </div>
   );
