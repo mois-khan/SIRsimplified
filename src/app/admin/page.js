@@ -10,9 +10,11 @@ export default function AdminDashboard() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
   const [photoModal, setPhotoModal] = useState(null); // URL of the photo to view
+  const [fetchError, setFetchError] = useState(false);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -31,13 +33,23 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("submissions")
-      .select("*")
-      .order("created_at", { ascending: false });
+    setFetchError(false);
+    
+    // Increased timeout to 15 seconds for slower connections or waking instances
+    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 15000));
+    
+    try {
+      const fetchPromise = supabase.from("submissions").select("*").order("created_at", { ascending: false });
+      const { data, error } = await Promise.race([fetchPromise, timeout]);
       
-    if (data) setSubmissions(data);
-    setLoading(false);
+      if (error) throw error;
+      if (data) setSubmissions(data);
+    } catch (err) {
+      console.error("Fetch failed or timed out:", err);
+      setFetchError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const confirmStatusChange = (id, newStatus) => {
@@ -54,6 +66,13 @@ export default function AdminDashboard() {
     showToast("Status successfully updated");
     
     await supabase.from("submissions").update({ status: newStatus }).eq("id", id);
+  };
+
+  const getStatusColor = (status) => {
+    if (status === 'Done' || status === 'Found in 2002 Roll') return 'var(--success-color)';
+    if (status === 'Documents Issue' || status === 'Not Found') return '#ef4444'; // Red
+    if (status === 'Followed Up') return '#eab308'; // Yellow
+    return 'var(--border-color)'; // Default/Pending
   };
 
   if (!isAuthenticated) {
@@ -85,8 +104,15 @@ export default function AdminDashboard() {
   const done = submissions.filter(s => s.status === 'Done').length;
   const docIssue = submissions.filter(s => s.status === 'Documents Issue').length;
 
-  // Filtered Data (Searches across all fields)
+  // Filtered Data (Searches across all fields AND matches active chip)
   const filteredData = submissions.filter(s => {
+    // 1. Check chip filter
+    if (statusFilter !== "All") {
+      const sStatus = s.status || "Pending";
+      if (sStatus !== statusFilter) return false;
+    }
+    
+    // 2. Check search text
     const query = searchQuery.toLowerCase();
     return (
       (s.name?.toLowerCase() || "").includes(query) ||
@@ -106,32 +132,32 @@ export default function AdminDashboard() {
           <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Manage voter submissions</p>
         </div>
         <a href="/api/admin/export" download>
-          <button className="btn-primary btn-success" style={{ margin: 0, padding: "10px 20px", width: "auto" }}>
-            Download Excel
+          <button className="btn-primary btn-success" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px" }}>
+            ↓ Download Excel
           </button>
         </a>
       </div>
 
-      <div className="insights-grid">
-        <div className="insight-card">
+      <div className="insights-grid" style={{ overflowX: "auto", display: "flex", flexWrap: "nowrap", paddingBottom: "10px" }}>
+        <div className={`insight-card ${statusFilter === "All" ? "active" : ""}`} onClick={() => setStatusFilter("All")} style={{ flexShrink: 0 }}>
+          <div className="insight-label">All</div>
           <div className="insight-value">{total}</div>
-          <div className="insight-label">Total</div>
         </div>
-        <div className="insight-card">
-          <div className="insight-value">{pending}</div>
+        <div className={`insight-card ${statusFilter === "Pending" ? "active" : ""}`} onClick={() => setStatusFilter("Pending")} style={{ flexShrink: 0 }}>
           <div className="insight-label">Pending</div>
+          <div className="insight-value">{pending}</div>
         </div>
-        <div className="insight-card">
-          <div className="insight-value">{done}</div>
+        <div className={`insight-card ${statusFilter === "Done" ? "active" : ""}`} onClick={() => setStatusFilter("Done")} style={{ flexShrink: 0 }}>
           <div className="insight-label">Done</div>
+          <div className="insight-value">{done}</div>
         </div>
-        <div className="insight-card">
+        <div className={`insight-card ${statusFilter === "Documents Issue" ? "active" : ""}`} onClick={() => setStatusFilter("Documents Issue")} style={{ flexShrink: 0 }}>
+          <div className="insight-label">Doc Issue</div>
           <div className="insight-value">{docIssue}</div>
-          <div className="insight-label">Doc Issues</div>
         </div>
       </div>
 
-      <div className="admin-header">
+      <div className="admin-header" style={{ marginTop: "-10px" }}>
         <input 
           type="text" 
           className="form-input search-bar" 
@@ -142,11 +168,20 @@ export default function AdminDashboard() {
       </div>
 
       {loading ? (
-        <div style={{ textAlign: "center", padding: "40px" }}>Loading data...</div>
+        <div style={{ textAlign: "center", padding: "40px" }}>
+          <div style={{ display: "inline-block", width: "24px", height: "24px", border: "3px solid var(--border-color)", borderTopColor: "var(--accent-color)", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
+          <p style={{ color: "var(--text-secondary)", marginTop: "10px" }}>Loading database...</p>
+        </div>
+      ) : fetchError ? (
+        <div style={{ textAlign: "center", padding: "40px", color: "#ef4444" }}>
+          Failed to load database. Please check your connection and try again.
+          <br /><br />
+          <button className="btn-primary" onClick={fetchData} style={{ width: "auto" }}>Retry</button>
+        </div>
       ) : (
         <div className="data-grid">
           {filteredData.map(sub => (
-            <div key={sub.id} className="data-card">
+            <div key={sub.id} className="data-card" style={{ borderBottom: `4px solid ${getStatusColor(sub.status || 'Pending')}` }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div className="data-field">
                   <span className="data-label">Name</span>

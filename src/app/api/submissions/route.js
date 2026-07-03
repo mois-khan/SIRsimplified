@@ -28,16 +28,16 @@ export async function POST(request) {
         .upload(filePath, photo);
 
       if (uploadError) {
-        console.error("Upload error:", uploadError);
-        return NextResponse.json({ error: "Failed to upload photo" }, { status: 500 });
+        console.error("Upload error (skipping photo):", uploadError);
+        // We do not fail the whole request if photo upload fails.
+      } else {
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("voter_ids")
+          .getPublicUrl(filePath);
+          
+        id_photo_url = publicUrlData.publicUrl;
       }
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("voter_ids")
-        .getPublicUrl(filePath);
-        
-      id_photo_url = publicUrlData.publicUrl;
     }
 
     // 2. Insert into database
@@ -57,7 +57,7 @@ export async function POST(request) {
 
     if (dbError) {
       console.error("DB error:", dbError);
-      return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to save submission", details: dbError }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data: dbData[0] }, { status: 200 });
