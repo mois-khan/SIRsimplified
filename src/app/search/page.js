@@ -39,7 +39,7 @@ export default function SearchPage() {
         Search for your details securely using your <strong>EPIC Number</strong> or <strong>House Number</strong>.
       </p>
 
-      <form onSubmit={handleSearch} style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "32px" }}>
+      <form onSubmit={handleSearch} style={{ display: "flex", flexWrap: "wrap", gap: "12px", marginBottom: "8px" }}>
         <input 
           type="text" 
           className="form-input" 
@@ -58,6 +58,9 @@ export default function SearchPage() {
           {isSearching ? "Searching..." : "Search"}
         </button>
       </form>
+      <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "32px", textAlign: "center", fontStyle: "italic" }}>
+        For assistance purposes only. Please search only your own or your family's details.
+      </p>
 
       {hasSearched && !isSearching && results.length === 0 && (
         <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>

@@ -29,14 +29,14 @@ export default function Navbar() {
 
   return (
     <nav className="navbar">
-      <div className="nav-brand">SIR Portal</div>
+      <div className="nav-brand">Voter Assistance Portal</div>
       
       <div className="nav-controls">
         {/* Desktop Navigation */}
         <div className="desktop-nav">
-          <Link href="/" className="nav-tab">Home</Link>
+          <Link href="/home" className="nav-tab">Home</Link>
+          <Link href="/forms" className="nav-tab">Forms</Link>
           <Link href="/search" className="nav-tab">Search 2002</Link>
-          {/* <Link href="/leaders" className="nav-tab">Our Leaders</Link> */}
         </div>
 
         <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle Dark Mode">
@@ -78,15 +78,15 @@ export default function Navbar() {
       {menuOpen && (
         <div className="mobile-menu">
           <div className="mobile-menu-content">
-            <Link href="/" className="mobile-link" onClick={() => setMenuOpen(false)}>
-              Home (Submit Form)
+            <Link href="/home" className="mobile-link" onClick={() => setMenuOpen(false)}>
+              Home
+            </Link>
+            <Link href="/forms" className="mobile-link" onClick={() => setMenuOpen(false)}>
+              Forms
             </Link>
             <Link href="/search" className="mobile-link" onClick={() => setMenuOpen(false)}>
               Search 2002 Roll
             </Link>
-            {/* <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
-              Our Leaders
-            </Link> */}
           </div>
         </div>
       )}

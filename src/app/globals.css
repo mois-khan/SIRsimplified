@@ -538,7 +538,7 @@ body {
 /* Footer Styles */
 .footer {
   width: 100%;
-  padding: 40px 20px;
+  padding: 24px 20px;
   background-color: var(--nav-bg);
   border-top: 1px solid var(--border-color);
   margin-top: auto;

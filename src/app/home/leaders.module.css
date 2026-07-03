@@ -19,33 +19,93 @@
 
 .hero {
   width: 100%;
-  padding: 0 20px 40px; /* Reduced bottom padding */
-  max-width: 1000px;
-  display: flex;
-  justify-content: center;
+  padding: 0 20px 40px;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas: 
+    "image"
+    "text"
+    "buttons";
+  gap: 24px;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas: 
+      "text image"
+      "buttons image";
+    align-items: center;
+    gap: 64px;
+  }
 }
 
 .heroContent {
-  text-align: left; /* Left align for a more structured, readable mobile experience */
+  grid-area: text;
+  text-align: left;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
+  max-width: 700px;
 }
 
-@media (min-width: 768px) {
-  .heroContent {
-    text-align: center;
-    align-items: center;
+.heroImage {
+  grid-area: image;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .heroImage {
+    justify-content: flex-end;
+  }
+}
+
+.buttonGroup {
+  grid-area: buttons;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 12px;
+}
+
+@media (min-width: 600px) {
+  .buttonGroup {
+    flex-direction: row;
+    width: auto;
+  }
+}
+
+.whySection {
+  max-width: 800px;
+  padding: 20px;
+  background: var(--card-bg);
+  border-radius: 20px;
+  text-align: left;
+  width: calc(100% - 40px);
+  margin: 40px auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
+}
+
+@media (min-width: 600px) {
+  .whySection {
+    padding: 40px;
+    border-radius: 24px;
+    margin: 80px auto;
   }
 }
 
 .heroTitle {
-  font-size: clamp(2.5rem, 6vw, 4.5rem);
+  font-size: clamp(2rem, 5vw, 3.5rem);
   font-weight: 700;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #1d1d1f;
-  letter-spacing: -1.5px;
+  letter-spacing: -1.2px;
   line-height: 1.1;
 }
 
@@ -54,17 +114,95 @@
 }
 
 .heroSubtitle {
-  font-size: clamp(1.125rem, 2.5vw, 1.5rem);
+  font-size: clamp(1rem, 2vw, 1.15rem);
   color: #86868b;
   line-height: 1.5;
   max-width: 800px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   font-weight: 400;
   letter-spacing: -0.2px;
 }
 
 [data-theme="dark"] .heroSubtitle {
   color: #a1a1a6;
+}
+
+.heroProfileCard {
+  position: relative;
+  width: 100%;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (min-width: 900px) {
+  .heroProfileCard {
+    max-width: 320px;
+  }
+}
+
+.heroProfileImage {
+  width: 100%;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  object-position: center 70%;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  background: transparent;
+}
+
+[data-theme="dark"] .heroProfileImage {
+  box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.heroProfileTag {
+  position: absolute;
+  bottom: 20px;
+  background: var(--card-bg);
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  text-align: center;
+  width: 95%;
+}
+
+@media (min-width: 600px) {
+  .heroProfileTag {
+    padding: 12px 20px;
+  }
+}
+
+.heroProfileName {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+  line-height: 1.2;
+}
+
+@media (min-width: 600px) {
+  .heroProfileName {
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+}
+
+.heroProfileRole {
+  font-size: 0.75rem;
+  color: var(--accent-color);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+@media (min-width: 600px) {
+  .heroProfileRole {
+    font-size: 0.8rem;
+  }
 }
 
 .grid {
@@ -227,16 +365,25 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 16px 36px;
+  gap: 8px;
+  padding: 12px 20px;
   background: #1d1d1f; 
   color: #ffffff;
-  font-size: 1.125rem;
+  font-size: 0.95rem;
   font-weight: 500;
-  border-radius: 980px; /* Pill shape like Apple */
+  border-radius: 980px;
   text-decoration: none;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   margin-top: 8px;
+  white-space: nowrap;
+}
+
+@media (min-width: 600px) {
+  .ctaButton {
+    padding: 16px 32px;
+    font-size: 1.1rem;
+    gap: 12px;
+  }
 }
 
 .ctaButton:hover {

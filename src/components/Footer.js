@@ -6,12 +6,8 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer-content">
         <div className="footer-icons">
-          <a href="https://www.moiskhan.dev/" target="_blank" rel="noopener noreferrer" className="footer-icon-link" aria-label="Portfolio">
-            {/* Crown / Portfolio Icon */}
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M2 4h20"></path>
-              <path d="m2 8 3 12h14l3-12-6 3-4-7-4 7z"></path>
-            </svg>
+          <a href="https://www.moiskhan.dev/" target="_blank" rel="noopener noreferrer" className="footer-icon-link" aria-label="Portfolio" style={{ padding: 0, overflow: "hidden", width: "46px", height: "46px" }}>
+            <img src="/red_crown_dp.jpg" alt="Portfolio" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           </a>
           <a href="https://github.com/mois-khan" target="_blank" rel="noopener noreferrer" className="footer-icon-link" aria-label="GitHub">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -34,6 +30,9 @@ export default function Footer() {
         </div>
         <div className="footer-text">
           Built by <a href="https://www.moiskhan.dev/" target="_blank" rel="noopener noreferrer" className="footer-author-link">Mois Khan</a>
+        </div>
+        <div className="footer-disclaimer" style={{ fontSize: "11px", color: "var(--text-secondary)", textAlign: "center", maxWidth: "800px", lineHeight: "1.5", marginTop: "8px" }}>
+          Voter Assistance Portal is an independent, volunteer-run community initiative in Medchal, Hyderabad. Not affiliated with the Election Commission of India. For official information, visit <a href="https://voters.eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-color)" }}>voters.eci.gov.in</a>.
         </div>
       </div>
     </footer>
