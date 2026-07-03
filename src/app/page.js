@@ -1,0 +1,136 @@
+"use client";
+import { useState } from "react";
+
+export default function Home() {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [photoName, setPhotoName] = useState("");
+
+  const whatsappLink = process.env.NEXT_PUBLIC_WHATSAPP_LINK || "#";
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    const formData = new FormData(e.target);
+    
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        body: formData,
+      });
+      
+      if (res.ok) {
+        setIsSuccess(true);
+      } else {
+        alert("Something went wrong. Please try again.");
+      }
+    } catch (err) {
+      alert("Failed to connect. Please check your connection.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  if (isSuccess) {
+    return (
+      <div className="card" style={{ textAlign: "center" }}>
+        <h1 className="title" style={{ color: "var(--success-color)", marginBottom: "16px" }}>
+          Success!
+        </h1>
+        <p className="subtitle" style={{ marginBottom: "32px", color: "var(--text-primary)" }}>
+          Your details have been securely submitted. Please join our WhatsApp group for important updates and assistance.
+        </p>
+        <a 
+          href={whatsappLink} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ textDecoration: "none" }}
+        >
+          <button className="btn-primary btn-success">
+            Join WhatsApp Group
+          </button>
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card">
+      <h1 className="title">Voter Assistance Portal</h1>
+      <p className="subtitle">
+        Enter your details below to get help with the 2002 electoral roll.
+      </p>
+
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label className="form-label">Full Name *</label>
+          <input 
+            type="text" 
+            name="name" 
+            className="form-input" 
+            required 
+            placeholder="e.g. John Doe"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Mobile Number *</label>
+          <input 
+            type="tel" 
+            name="mobile" 
+            className="form-input" 
+            required 
+            placeholder="10-digit number"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">EPIC Number *</label>
+          <input 
+            type="text" 
+            name="epic_no" 
+            className="form-input" 
+            required 
+            placeholder="e.g. ABC1234567"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">House Number (Optional)</label>
+          <input 
+            type="text" 
+            name="house_no" 
+            className="form-input" 
+            placeholder="e.g. 1-23/A"
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">Voter ID Photo (Optional)</label>
+          <div className="file-upload-wrapper">
+            <div className="file-upload-btn">
+              {photoName ? photoName : "Tap to upload ID photo"}
+            </div>
+            <input 
+              type="file" 
+              name="photo" 
+              accept="image/*"
+              onChange={(e) => {
+                if (e.target.files[0]) setPhotoName(e.target.files[0].name);
+              }}
+            />
+          </div>
+        </div>
+
+        <button 
+          type="submit" 
+          className="btn-primary"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? "Submitting..." : "Submit & Join Group"}
+        </button>
+      </form>
+    </div>
+  );
+}

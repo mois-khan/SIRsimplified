@@ -1,0 +1,67 @@
+import { NextResponse } from "next/server";
+import { supabase } from "../../../lib/supabase";
+
+export async function POST(request) {
+  try {
+    const formData = await request.formData();
+    const name = formData.get("name");
+    const mobile = formData.get("mobile");
+    const epic_no = formData.get("epic_no");
+    const house_no = formData.get("house_no") || null;
+    const photo = formData.get("photo");
+
+    if (!name || !mobile || !epic_no) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    let id_photo_url = null;
+
+    // 1. Upload photo if exists
+    if (photo && photo.size > 0) {
+      const fileExt = photo.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("voter_ids")
+        .upload(filePath, photo);
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError);
+        return NextResponse.json({ error: "Failed to upload photo" }, { status: 500 });
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from("voter_ids")
+        .getPublicUrl(filePath);
+        
+      id_photo_url = publicUrlData.publicUrl;
+    }
+
+    // 2. Insert into database
+    const { data: dbData, error: dbError } = await supabase
+      .from("submissions")
+      .insert([
+        {
+          name,
+          mobile,
+          epic_no,
+          house_no,
+          id_photo_url,
+        }
+      ])
+      .select();
+
+    if (dbError) {
+      console.error("DB error:", dbError);
+      return NextResponse.json({ error: "Failed to save submission" }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: dbData[0] }, { status: 200 });
+
+  } catch (error) {
+    console.error("Server error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
