@@ -76,6 +76,9 @@ export default function Navbar() {
           <Link href="/search" className="mobile-link" onClick={() => setMenuOpen(false)}>
             Search 2002 Roll
           </Link>
+          <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
+            Our Leaders
+          </Link>
         </div>
       )}
     </nav>

@@ -9,10 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google/genai": "^2.10.0",
+    "@supabase/supabase-js": "^2.110.0",
+    "dotenv": "^17.4.2",
+    "exceljs": "latest",
     "next": "latest",
+    "pdf-lib": "^1.17.1",
+    "pdf2pic": "^3.2.0",
     "react": "latest",
-    "react-dom": "latest",
-    "@supabase/supabase-js": "latest",
-    "exceljs": "latest"
+    "react-dom": "latest"
   }
 }

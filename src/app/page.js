@@ -70,7 +70,7 @@ export default function Home() {
   }
 
   return (
-    <div className="card">
+    <div className="card" style={{ maxWidth: "600px", margin: "0 auto" }}>
       <h1 className="title">Voter Assistance Portal</h1>
       <p className="subtitle">
         Enter your details below to get help with the 2002 electoral roll.

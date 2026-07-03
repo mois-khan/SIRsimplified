@@ -1,0 +1,262 @@
+/* Ultra Minimal, Apple-inspired Aesthetic */
+
+.pageWrapper {
+  width: 100%;
+  min-height: calc(100vh - 70px);
+  padding: 80px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: #f5f5f7; /* Apple's signature off-white for excellent contrast */
+  color: #1d1d1f; /* Soft deep grey instead of harsh black */
+  position: relative;
+}
+
+[data-theme="dark"] .pageWrapper {
+  background-color: #000000; /* Pure black */
+  color: #f5f5f7;
+}
+
+.hero {
+  text-align: center;
+  padding: 0 20px 80px;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.heroTitle {
+  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-weight: 700;
+  margin-bottom: 24px;
+  color: #1d1d1f;
+  letter-spacing: -1.5px;
+  line-height: 1.1;
+}
+
+[data-theme="dark"] .heroTitle {
+  color: #f5f5f7;
+}
+
+.heroSubtitle {
+  font-size: clamp(1.25rem, 2.5vw, 1.5rem);
+  color: #86868b;
+  line-height: 1.5;
+  max-width: 800px;
+  margin: 0 auto;
+  font-weight: 400;
+  letter-spacing: -0.2px;
+}
+
+[data-theme="dark"] .heroSubtitle {
+  color: #a1a1a6;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 32px;
+  width: 100%;
+  max-width: 1200px; /* Large screen support */
+  padding: 0 24px;
+  margin-bottom: 120px;
+}
+
+.card {
+  background: #ffffff; /* Pure white on off-white background pops perfectly */
+  border: 1px solid transparent;
+  border-radius: 24px; /* Soft Apple-like curves */
+  padding: 0;
+  text-align: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  /* Ultra refined default shadow */
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .card {
+  background: #1c1c1e; /* Deep grey */
+  border: 1px solid #333336;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+}
+
+.card:hover {
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .card:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+  border-color: #48484a;
+}
+
+/* Bottom inside edge accent on hover for a subtle pop of color */
+.card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: #0066cc; /* Apple system blue */
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card:hover::after {
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+.cardContent {
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.imageContainer {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 28px;
+  border-radius: 50%;
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+[data-theme="dark"] .imageContainer {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.name {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #1d1d1f;
+  text-align: center;
+  letter-spacing: -0.5px;
+}
+
+[data-theme="dark"] .name {
+  color: #f5f5f7;
+}
+
+.role {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #0066cc; /* System blue */
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+[data-theme="dark"] .role {
+  color: #2997ff;
+}
+
+.socialLinks {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  justify-content: center;
+}
+
+.socialIcon {
+  color: #86868b;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 22px;
+  height: 22px;
+}
+
+.socialIcon:hover {
+  color: #0066cc;
+  transform: scale(1.15);
+}
+
+[data-theme="dark"] .socialIcon {
+  color: #a1a1a6;
+}
+
+[data-theme="dark"] .socialIcon:hover {
+  color: #2997ff;
+}
+
+.description {
+  font-size: 1rem;
+  color: #86868b;
+  line-height: 1.6;
+  text-align: center;
+  font-weight: 400;
+}
+
+[data-theme="dark"] .description {
+  color: #a1a1a6;
+}
+
+.ctaSection {
+  text-align: center;
+  padding: 80px 40px;
+  background: transparent;
+  width: 100%;
+}
+
+.ctaText {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 32px;
+  color: #1d1d1f;
+  letter-spacing: -1px;
+}
+
+[data-theme="dark"] .ctaText {
+  color: #f5f5f7;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 36px;
+  background: #1d1d1f; 
+  color: #ffffff;
+  font-size: 1.125rem;
+  font-weight: 500;
+  border-radius: 980px; /* Pill shape like Apple */
+  text-decoration: none;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ctaButton:hover {
+  background: #000000;
+  transform: scale(1.02);
+}
+
+[data-theme="dark"] .ctaButton {
+  background: #ffffff;
+  color: #1d1d1f;
+}
+
+[data-theme="dark"] .ctaButton:hover {
+  background: #e5e5ea;
+}
+
+.ctaIcon {
+  width: 20px;
+  height: 20px;
+}
