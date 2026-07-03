@@ -9,6 +9,7 @@ export async function POST(request) {
     const epic_no = formData.get("epic_no");
     const house_no = formData.get("house_no") || null;
     const photo = formData.get("photo");
+    const status = formData.get("status") || "Pending";
 
     if (!name || !mobile || !epic_no) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -49,6 +50,7 @@ export async function POST(request) {
           epic_no,
           house_no,
           id_photo_url,
+          status,
         }
       ])
       .select();

@@ -256,29 +256,29 @@ body {
 
 .insights-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-  margin-bottom: 32px;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
 }
 
 .insight-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 20px;
+  padding: 12px;
   text-align: center;
   box-shadow: 0 2px 10px rgba(0,0,0,0.02);
 }
 
 .insight-value {
-  font-size: 28px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--accent-color);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .insight-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
@@ -289,30 +289,30 @@ body {
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .search-bar {
   flex: 1;
-  min-width: 250px;
+  min-width: 200px;
 }
 
 /* Vertical Data Cards (Mobile First & Search Results) */
 .data-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
 }
 
 .data-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius);
-  padding: 16px;
+  padding: 12px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .data-field {
@@ -321,14 +321,14 @@ body {
 }
 
 .data-label {
-  font-size: 11px;
+  font-size: 10px;
   text-transform: uppercase;
   color: var(--text-secondary);
   letter-spacing: 0.5px;
 }
 
 .data-value {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
   word-break: break-word;
@@ -338,12 +338,17 @@ body {
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 6px 10px;
+  padding: 6px 8px;
   border-radius: 6px;
   font-size: 13px;
   outline: none;
   cursor: pointer;
   width: 100%;
+}
+
+.status-select option {
+  background: var(--bg-color);
+  color: var(--text-primary);
 }
 
 .status-select:focus {
@@ -354,7 +359,7 @@ body {
   color: var(--accent-color);
   text-decoration: none;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -362,4 +367,69 @@ body {
 
 .photo-link:hover {
   text-decoration: underline;
+}
+
+/* Modal Styling */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.modal-content {
+  background: var(--bg-color);
+  padding: 24px;
+  border-radius: var(--border-radius);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Toast Notification */
+.toast-container {
+  position: fixed;
+  top: 80px; /* Below navbar */
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 90%;
+  max-width: 320px;
+  pointer-events: none;
+}
+
+.toast {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--success-color);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+[data-theme="dark"] .toast {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  background: #1e293b;
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
 }
