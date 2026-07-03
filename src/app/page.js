@@ -32,6 +32,11 @@ export default function Home() {
     }
   }
 
+  const resetForm = () => {
+    setIsSuccess(false);
+    setPhotoName("");
+  };
+
   if (isSuccess) {
     return (
       <div className="card" style={{ textAlign: "center" }}>
@@ -41,16 +46,25 @@ export default function Home() {
         <p className="subtitle" style={{ marginBottom: "32px", color: "var(--text-primary)" }}>
           Your details have been securely submitted. Please join our WhatsApp group for important updates and assistance.
         </p>
-        <a 
-          href={whatsappLink} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          style={{ textDecoration: "none" }}
-        >
-          <button className="btn-primary btn-success">
-            Join WhatsApp Group
+        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+          <a 
+            href={whatsappLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ textDecoration: "none" }}
+          >
+            <button className="btn-primary btn-success">
+              Join WhatsApp Group
+            </button>
+          </a>
+          <button 
+            onClick={resetForm}
+            className="btn-primary"
+            style={{ background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)" }}
+          >
+            Submit Another Response
           </button>
-        </a>
+        </div>
       </div>
     );
   }
