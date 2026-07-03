@@ -1,111 +1,99 @@
 const fs = require('fs');
+const PDFParser = require('pdf2json');
 const path = require('path');
-const { PDFDocument } = require('pdf-lib');
-const { GoogleGenAI } = require('@google/genai');
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: path.resolve(__dirname, '../.env.local') });
 
-if (!process.env.GEMINI_API_KEY) {
-    console.error("Missing GEMINI_API_KEY in .env.local. Please add it.");
-    process.exit(1);
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
 const PDF_DIR = path.resolve(__dirname, '../docs_2002_list');
 
-async function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-async function processPdf(filePath) {
-    const pdfBytes = fs.readFileSync(filePath);
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    const totalPages = pdfDoc.getPageCount();
-    console.log(`Processing ${path.basename(filePath)} (${totalPages} pages)`);
-
-    for (let i = 0; i < totalPages; i++) {
-        try {
-            // Split into 1-page PDF
-            const subDoc = await PDFDocument.create();
-            const [copiedPage] = await subDoc.copyPages(pdfDoc, [i]);
-            subDoc.addPage(copiedPage);
-            const pageBytes = await subDoc.save();
-            const base64Data = Buffer.from(pageBytes).toString('base64');
+async function processFile(filePath) {
+    return new Promise((resolve, reject) => {
+        const pdfParser = new PDFParser();
+        
+        pdfParser.on("pdfParser_dataError", errData => {
+            console.error(errData.parserError);
+            reject(errData.parserError);
+        });
+        
+        pdfParser.on("pdfParser_dataReady", async pdfData => {
+            let allElectors = [];
             
-            console.log(`Analyzing page ${i + 1}/${totalPages}...`);
-            
-            const prompt = `You are an expert data extraction assistant. This is a page from an Indian electoral roll.
-Extract the details of every elector on this page into a JSON array.
-If the page does not contain elector boxes, return an empty array [].
-The format of each JSON object must be EXACTLY:
-{
-  "epic_no": "EPIC/ID Card No (extract if present, otherwise null)",
-  "name": "Elector's Full Name",
-  "house_no": "House No (extract if present, otherwise null)",
-  "part_no": "Part No (Look at the header/footer of the page, otherwise null)",
-  "serial_no": "Serial No / Sl No (Number assigned to this elector in their box, otherwise null)"
-}
-Return ONLY valid JSON. Do not include markdown blocks like \`\`\`json. Ensure perfect accuracy for names, serial numbers, and house numbers.`;
-
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: [
-                    prompt,
-                    {
-                        inlineData: {
-                            data: base64Data,
-                            mimeType: 'application/pdf'
+            for (let page of pdfData.Pages) {
+                let rows = [];
+                let part_no = null;
+                
+                page.Texts.forEach(t => {
+                    let text = decodeURIComponent(t.R[0].T).trim();
+                    if (!text) return;
+                    
+                    // Extract PS No (Part No) from the header (top right)
+                    if (t.y > 1.0 && t.y < 2.0 && t.x > 32.0 && t.x < 35.0 && !isNaN(parseInt(text))) {
+                        part_no = text;
+                    }
+                    
+                    // Group text elements into rows by their Y coordinate
+                    let added = false;
+                    for (let row of rows) {
+                        if (Math.abs(row.y - t.y) < 0.6) {
+                            row.items.push({ x: t.x, text });
+                            added = true;
+                            break;
                         }
                     }
-                ],
-                config: {
-                    responseMimeType: "application/json"
-                }
-            });
-
-            const text = response.text;
-            let electors = [];
-            try {
-                electors = JSON.parse(text);
-            } catch (e) {
-                console.error(`Failed to parse JSON on page ${i+1}:`, text.substring(0,100));
-                continue;
-            }
-
-            if (electors && electors.length > 0) {
-                // Validate data
-                const validElectors = electors.filter(e => e.name && e.name.trim() !== "");
-                
-                if (validElectors.length > 0) {
-                    const { error } = await supabase.from('electors_2002').insert(validElectors);
-                    if (error) {
-                        console.error(`Supabase Insert Error on page ${i+1}:`, error.message);
-                    } else {
-                        console.log(`✅ Saved ${validElectors.length} electors from page ${i+1}`);
+                    if (!added) {
+                        rows.push({ y: t.y, items: [{ x: t.x, text }] });
                     }
+                });
+                
+                rows.sort((a, b) => a.y - b.y);
+                
+                rows.forEach(row => {
+                    if (row.y < 3.0) return; // Skip the headers
+                    
+                    let sl_no = null, house_no = null, name = null, epic_no = null;
+                    
+                    row.items.forEach(item => {
+                        if (item.x > 3 && item.x < 5.5) sl_no = item.text;
+                        if (item.x > 8 && item.x < 11.5) house_no = item.text;
+                        if (item.x > 11.5 && item.x < 20.0) {
+                            name = name ? name + " " + item.text : item.text;
+                        }
+                        if (item.x > 31.0 && item.text !== "-" && item.text !== "Page") epic_no = item.text;
+                    });
+                    
+                    // Ignore footer lines like "55 of 1 Page"
+                    if (name && name.includes("Page")) return;
+                    
+                    if (sl_no || name) {
+                        allElectors.push({ 
+                            serial_no: sl_no === "-" ? null : sl_no, 
+                            house_no: house_no === "-" ? null : house_no, 
+                            name, 
+                            epic_no: epic_no === "-" ? null : epic_no,
+                            part_no 
+                        });
+                    }
+                });
+            }
+            
+            console.log(`✅ Parsed ${allElectors.length} electors from ${path.basename(filePath)}. Uploading to database...`);
+            
+            // Insert in batches of 500 to avoid Supabase payload limits
+            for (let i = 0; i < allElectors.length; i += 500) {
+                const batch = allElectors.slice(i, i + 500);
+                const { error } = await supabase.from('electors_2002').insert(batch);
+                if (error) {
+                    console.error("❌ Insert error:", error.message);
                 }
-            } else {
-                 console.log(`No electors found on page ${i+1}`);
             }
             
-            // Respect rate limits
-            await delay(4500);
-            
-        } catch (err) {
-            console.error(`Gemini API Error on page ${i+1}:`, err.message || err);
-            
-            // If quota exceeded (429), wait 60 seconds and retry the exact same page
-            if (err.message && err.message.includes("429")) {
-                console.log("⏳ Quota exceeded. Waiting 60 seconds before retrying...");
-                await delay(61000);
-                i--; // Retry this page
-            } else {
-                await delay(5000); // Standard backoff on other errors
-            }
-        }
-    }
+            console.log(`🚀 Upload complete for ${path.basename(filePath)}!`);
+            resolve();
+        });
+        
+        pdfParser.loadPDF(filePath);
+    });
 }
 
 async function main() {
@@ -120,10 +108,11 @@ async function main() {
         return;
     }
 
+    console.log(`Found ${files.length} PDFs. Starting local extraction (NO API LIMITS!)...`);
     for (const file of files) {
-        await processPdf(path.join(PDF_DIR, file));
+         await processFile(path.join(PDF_DIR, file));
     }
-    console.log("Finished processing all PDFs!");
+    console.log("🎉 All PDFs processed successfully!");
 }
 
 main();

@@ -32,6 +32,13 @@ export default function Navbar() {
       <div className="nav-brand">SIR Portal</div>
       
       <div className="nav-controls">
+        {/* Desktop Navigation */}
+        <div className="desktop-nav">
+          <Link href="/" className="nav-tab">Home</Link>
+          <Link href="/search" className="nav-tab">Search 2002</Link>
+          <Link href="/leaders" className="nav-tab">Our Leaders</Link>
+        </div>
+
         <button onClick={toggleTheme} className="theme-toggle" aria-label="Toggle Dark Mode">
           {theme === "light" ? (
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -70,15 +77,17 @@ export default function Navbar() {
 
       {menuOpen && (
         <div className="mobile-menu">
-          <Link href="/" className="mobile-link" onClick={() => setMenuOpen(false)}>
-            Home (Submit Form)
-          </Link>
-          <Link href="/search" className="mobile-link" onClick={() => setMenuOpen(false)}>
-            Search 2002 Roll
-          </Link>
-          <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
-            Our Leaders
-          </Link>
+          <div className="mobile-menu-content">
+            <Link href="/" className="mobile-link" onClick={() => setMenuOpen(false)}>
+              Home (Submit Form)
+            </Link>
+            <Link href="/search" className="mobile-link" onClick={() => setMenuOpen(false)}>
+              Search 2002 Roll
+            </Link>
+            <Link href="/leaders" className="mobile-link" onClick={() => setMenuOpen(false)}>
+              Our Leaders
+            </Link>
+          </div>
         </div>
       )}
     </nav>
