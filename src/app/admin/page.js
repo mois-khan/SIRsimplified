@@ -17,6 +17,8 @@ export default function AdminDashboard() {
   const [fetchError, setFetchError] = useState(false);
   const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
   const [deletePhotoModal, setDeletePhotoModal] = useState(null); // { id, url }
+  const [editModal, setEditModal] = useState(null);
+  const [deleteRecordModal, setDeleteRecordModal] = useState(null);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -133,6 +135,64 @@ export default function AdminDashboard() {
       showToast(err.message ? `Delete failed: ${err.message}` : "Failed to delete photo.");
     } finally {
       setDeletePhotoModal(null);
+    }
+  };
+
+  const executeEdit = async (e) => {
+    e.preventDefault();
+    if (!editModal) return;
+
+    try {
+      const { error: dbError } = await supabase
+        .from('submissions')
+        .update({
+          name: editModal.name,
+          mobile: editModal.mobile,
+          epic_no: editModal.epic_no,
+          house_no: editModal.house_no,
+          status: editModal.status
+        })
+        .eq('id', editModal.id);
+
+      if (dbError) throw dbError;
+
+      setSubmissions(subs => subs.map(sub => sub.id === editModal.id ? { ...sub, ...editModal } : sub));
+      showToast("Record updated successfully!");
+    } catch (err) {
+      console.error("Edit error:", err);
+      showToast(err.message ? `Edit failed: ${err.message}` : "Failed to update record.");
+    } finally {
+      setEditModal(null);
+    }
+  };
+
+  const executeDeleteRecord = async () => {
+    if (!deleteRecordModal) return;
+    const { id, id_photo_url } = deleteRecordModal;
+
+    try {
+      if (id_photo_url) {
+        const fileName = id_photo_url.split('/').pop();
+        const { error: storageError } = await supabase.storage
+          .from('voter_ids')
+          .remove([fileName]);
+        if (storageError) console.error("Storage delete error:", storageError);
+      }
+
+      const { error: dbError } = await supabase
+        .from('submissions')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      setSubmissions(subs => subs.filter(sub => sub.id !== id));
+      showToast("Record deleted successfully!");
+    } catch (err) {
+      console.error("Delete record error:", err);
+      showToast(err.message ? `Delete failed: ${err.message}` : "Failed to delete record.");
+    } finally {
+      setDeleteRecordModal(null);
     }
   };
 
@@ -255,17 +315,32 @@ export default function AdminDashboard() {
                   <span className="data-label">Name</span>
                   <span className="data-value" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>{sub.name}</span>
                 </div>
-                <button 
-                  onClick={() => {
-                    const text = `*Voter Details*\nName: ${sub.name}\nMobile: ${sub.mobile}\nEPIC: ${sub.epic_no}\nHouse No: ${sub.house_no || "N/A"}\nStatus: ${sub.status || "Pending"}`;
-                    navigator.clipboard.writeText(text);
-                    showToast("Copied to clipboard!");
-                  }}
-                  style={{ background: "transparent", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "var(--text-secondary)", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                  Copy
-                </button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button 
+                    onClick={() => setEditModal(sub)}
+                    style={{ background: "transparent", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "var(--accent-color)", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    Edit
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const text = `*Voter Details*\nName: ${sub.name}\nMobile: ${sub.mobile}\nEPIC: ${sub.epic_no}\nHouse No: ${sub.house_no || "N/A"}\nStatus: ${sub.status || "Pending"}`;
+                      navigator.clipboard.writeText(text);
+                      showToast("Copied to clipboard!");
+                    }}
+                    style={{ background: "transparent", border: "1px solid var(--border-color)", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "var(--text-secondary)", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy
+                  </button>
+                  <button 
+                    onClick={() => setDeleteRecordModal(sub)}
+                    style={{ background: "transparent", border: "1px solid #ef4444", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "#ef4444", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  </button>
+                </div>
               </div>
               
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
@@ -366,6 +441,59 @@ export default function AdminDashboard() {
             <div className="modal-actions">
               <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setDeletePhotoModal(null)}>Cancel</button>
               <button className="btn-primary" style={{ background: "#ef4444", border: "none" }} onClick={executePhotoDelete}>Yes, Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Record Modal */}
+      {editModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }}>
+            <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Edit Submission</h2>
+            <form onSubmit={executeEdit}>
+              <div className="form-group">
+                <label className="form-label">Name</label>
+                <input type="text" className="form-input" value={editModal.name} onChange={e => setEditModal({...editModal, name: e.target.value})} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mobile</label>
+                <input type="tel" className="form-input" value={editModal.mobile} onChange={e => setEditModal({...editModal, mobile: e.target.value})} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">EPIC No</label>
+                <input type="text" className="form-input" value={editModal.epic_no} onChange={e => setEditModal({...editModal, epic_no: e.target.value})} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">House No</label>
+                <input type="text" className="form-input" value={editModal.house_no || ""} onChange={e => setEditModal({...editModal, house_no: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select className="form-input" value={editModal.status || "Pending"} onChange={e => setEditModal({...editModal, status: e.target.value})}>
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Documents Issue">Documents Issue</option>
+                </select>
+              </div>
+              <div className="modal-actions" style={{ marginTop: "24px" }}>
+                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setEditModal(null)}>Cancel</button>
+                <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Record Confirmation Modal */}
+      {deleteRecordModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="title" style={{ fontSize: "18px" }}>Delete Submission</h2>
+            <p className="subtitle">Are you sure you want to permanently delete <strong>{deleteRecordModal.name}</strong>'s record? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setDeleteRecordModal(null)}>Cancel</button>
+              <button className="btn-primary" style={{ background: "#ef4444", border: "none" }} onClick={executeDeleteRecord}>Yes, Delete Record</button>
             </div>
           </div>
         </div>
