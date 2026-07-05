@@ -77,14 +77,32 @@ export default function Home() {
       </p>
 
       <form onSubmit={handleSubmit}>
+        <div className="form-group" style={{ marginBottom: "24px" }}>
+          <label className="form-label">Enumeration Form Status</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
+              <input type="radio" name="status" value="Pending" defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)" }} />
+              Pending (Not yet filled)
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
+              <input type="radio" name="status" value="Done" style={{ width: "18px", height: "18px", accentColor: "var(--success-color)" }} />
+              Form Fill Up Done
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
+              <input type="radio" name="status" value="Documents Issue" style={{ width: "18px", height: "18px", accentColor: "#ef4444" }} />
+              Documents Issue
+            </label>
+          </div>
+        </div>
+
         <div className="form-group">
-          <label className="form-label">Full Name *</label>
+          <label className="form-label">Name *</label>
           <input 
             type="text" 
             name="name" 
             className="form-input" 
             required 
-            placeholder="e.g. John Doe"
+            placeholder="e.g. Zaker"
           />
         </div>
 
@@ -100,13 +118,13 @@ export default function Home() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">EPIC Number *</label>
+          <label className="form-label">Voter ID/EPIC Number *</label>
           <input 
             type="text" 
             name="epic_no" 
             className="form-input" 
             required 
-            placeholder="e.g. ABC1234567"
+            placeholder="e.g. YAV1234567"
           />
         </div>
 
@@ -134,24 +152,6 @@ export default function Home() {
                 if (e.target.files[0]) setPhotoName(e.target.files[0].name);
               }}
             />
-          </div>
-        </div>
-
-        <div className="form-group" style={{ marginBottom: "24px" }}>
-          <label className="form-label">Enumeration Form Status</label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Pending" defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)" }} />
-              Pending (Not yet filled)
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Done" style={{ width: "18px", height: "18px", accentColor: "var(--success-color)" }} />
-              Form Fill Up Done
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Documents Issue" style={{ width: "18px", height: "18px", accentColor: "#ef4444" }} />
-              Documents Issue
-            </label>
           </div>
         </div>
 

@@ -241,7 +241,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 6px;
-  color: var(--text-secondary);
+  color: var(--text-primary); /* Increased contrast */
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -255,6 +255,14 @@ body {
   font-size: 16px;
   outline: none;
   transition: all 0.2s ease;
+}
+
+.form-input::placeholder {
+  color: rgba(156, 163, 175, 0.6);
+}
+
+[data-theme="dark"] .form-input::placeholder {
+  color: rgba(156, 163, 175, 0.3);
 }
 
 .form-input:focus {
