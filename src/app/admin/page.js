@@ -385,7 +385,7 @@ export default function AdminDashboard() {
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
-                    View ID
+                    View Form
                   </button>
                   <button 
                     onClick={() => setDeletePhotoModal({ id: sub.id, url: sub.id_photo_url })}
@@ -402,12 +402,16 @@ export default function AdminDashboard() {
                   ) : (
                     <label style={{ cursor: "pointer", fontSize: "14px", color: "var(--accent-color)", display: "flex", alignItems: "center", gap: "4px" }}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                      Upload Photo
+                      Upload Form
                       <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleFileUpload(e, sub.id)} />
                     </label>
                   )}
                 </div>
               )}
+              
+              <div style={{ marginTop: "12px", paddingTop: "8px", borderTop: "1px dashed var(--border-color)", fontSize: "11px", color: "var(--text-secondary)", textAlign: "right" }}>
+                Submitted: {new Date(sub.created_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', dateStyle: 'medium', timeStyle: 'short' })}
+              </div>
             </div>
           ))}
           {filteredData.length === 0 && (
@@ -436,8 +440,8 @@ export default function AdminDashboard() {
       {deletePhotoModal && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <h2 className="title" style={{ fontSize: "18px" }}>Delete Photo</h2>
-            <p className="subtitle">Are you sure you want to delete this ID photo? This action cannot be undone.</p>
+            <h2 className="title" style={{ fontSize: "18px" }}>Delete Form Upload</h2>
+            <p className="subtitle">Are you sure you want to delete this enumeration form upload? This action cannot be undone.</p>
             <div className="modal-actions">
               <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setDeletePhotoModal(null)}>Cancel</button>
               <button className="btn-primary" style={{ background: "#ef4444", border: "none" }} onClick={executePhotoDelete}>Yes, Delete</button>
@@ -504,10 +508,10 @@ export default function AdminDashboard() {
         <div className="modal-overlay" onClick={() => setPhotoModal(null)}>
           <div className="modal-content" style={{ maxWidth: "600px", padding: "16px" }} onClick={e => e.stopPropagation()}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <h2 className="title" style={{ fontSize: "18px", margin: 0 }}>Voter ID Photo</h2>
+              <h2 className="title" style={{ fontSize: "18px", margin: 0 }}>Enumeration Form Upload</h2>
               <button onClick={() => setPhotoModal(null)} style={{ background: "none", border: "none", fontSize: "24px", color: "var(--text-primary)", cursor: "pointer" }}>✕</button>
             </div>
-            <img src={photoModal} alt="Voter ID" style={{ width: "100%", height: "auto", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
+            <img src={photoModal} alt="Enumeration Form" style={{ width: "100%", height: "auto", borderRadius: "8px", border: "1px solid var(--border-color)" }} />
             <a href={photoModal} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: "16px", textDecoration: "none" }}>
               <button className="btn-primary">Open in Full Tab</button>
             </a>

@@ -139,10 +139,10 @@ export default function Home() {
         </div>
 
         <div className="form-group">
-          <label className="form-label">Voter ID Photo (Optional)</label>
+          <label className="form-label">Enumeration Form Upload (Optional)</label>
           <div className="file-upload-wrapper">
             <div className="file-upload-btn">
-              {photoName ? photoName : "Tap to upload ID photo"}
+              {photoName ? photoName : "Tap to upload Enumeration form"}
             </div>
             <input 
               type="file" 
