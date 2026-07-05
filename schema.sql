@@ -26,3 +26,24 @@ CREATE TABLE electors_2002 (
 );
 
 -- Note: You also need to create a Storage Bucket in Supabase named 'voter_ids' and make it public for uploads.
+-- Run the following in your Supabase SQL editor to fix the "violates row-level security policy" error:
+
+-- 1. Create the bucket programmatically (if it doesn't exist)
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('voter_ids', 'voter_ids', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 2. Allow public uploads to the bucket
+CREATE POLICY "Allow public uploads" 
+ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id = 'voter_ids');
+
+-- 3. Allow public viewing
+CREATE POLICY "Allow public viewing" 
+ON storage.objects FOR SELECT 
+USING (bucket_id = 'voter_ids');
+
+-- 4. Allow public deletion
+CREATE POLICY "Allow public deletion" 
+ON storage.objects FOR DELETE 
+USING (bucket_id = 'voter_ids');

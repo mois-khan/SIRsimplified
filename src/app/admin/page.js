@@ -15,6 +15,8 @@ export default function AdminDashboard() {
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
   const [photoModal, setPhotoModal] = useState(null); // URL of the photo to view
   const [fetchError, setFetchError] = useState(false);
+  const [uploadingPhotoId, setUploadingPhotoId] = useState(null);
+  const [deletePhotoModal, setDeletePhotoModal] = useState(null); // { id, url }
 
   const showToast = (msg) => {
     setToast(msg);
@@ -66,6 +68,72 @@ export default function AdminDashboard() {
     showToast("Status successfully updated");
     
     await supabase.from("submissions").update({ status: newStatus }).eq("id", id);
+  };
+
+  const handleFileUpload = async (e, id) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingPhotoId(id);
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${id}-${Math.random()}.${fileExt}`;
+
+    try {
+      const { error: uploadError } = await supabase.storage
+        .from('voter_ids')
+        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voter_ids')
+        .getPublicUrl(fileName);
+
+      const { error: dbError } = await supabase
+        .from('submissions')
+        .update({ id_photo_url: publicUrl })
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, id_photo_url: publicUrl } : sub));
+      showToast("Photo uploaded successfully!");
+    } catch (err) {
+      console.error("Upload error:", err);
+      showToast(err.message ? `Upload failed: ${err.message}` : "Failed to upload photo.");
+    } finally {
+      setUploadingPhotoId(null);
+    }
+  };
+
+  const executePhotoDelete = async () => {
+    if (!deletePhotoModal) return;
+    const { id, url } = deletePhotoModal;
+
+    try {
+      const fileName = url.split('/').pop();
+
+      const { error: storageError } = await supabase.storage
+        .from('voter_ids')
+        .remove([fileName]);
+
+      if (storageError) console.error("Storage delete error:", storageError);
+
+      const { error: dbError } = await supabase
+        .from('submissions')
+        .update({ id_photo_url: null })
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, id_photo_url: null } : sub));
+      showToast("Photo deleted successfully!");
+    } catch (err) {
+      console.error("Delete error:", err);
+      showToast(err.message ? `Delete failed: ${err.message}` : "Failed to delete photo.");
+    } finally {
+      setDeletePhotoModal(null);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -231,19 +299,38 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
-              {sub.id_photo_url && (
-                <div style={{ marginTop: "12px", borderTop: "1px solid var(--border-color)", paddingTop: "12px" }}>
+              {sub.id_photo_url ? (
+                <div style={{ marginTop: "12px", borderTop: "1px solid var(--border-color)", paddingTop: "12px", display: "flex", gap: "16px" }}>
                   <button 
                     onClick={() => setPhotoModal(sub.id_photo_url)} 
                     className="photo-link" 
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: "4px" }}
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                       <circle cx="12" cy="12" r="3"></circle>
                     </svg>
-                    View ID Photo
+                    View ID
                   </button>
+                  <button 
+                    onClick={() => setDeletePhotoModal({ id: sub.id, url: sub.id_photo_url })}
+                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0, color: "#ef4444", fontSize: "14px", display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Delete
+                  </button>
+                </div>
+              ) : (
+                <div style={{ marginTop: "12px", borderTop: "1px solid var(--border-color)", paddingTop: "12px" }}>
+                  {uploadingPhotoId === sub.id ? (
+                    <span style={{ fontSize: "14px", color: "var(--text-secondary)" }}>Uploading...</span>
+                  ) : (
+                    <label style={{ cursor: "pointer", fontSize: "14px", color: "var(--accent-color)", display: "flex", alignItems: "center", gap: "4px" }}>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                      Upload Photo
+                      <input type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleFileUpload(e, sub.id)} />
+                    </label>
+                  )}
                 </div>
               )}
             </div>
@@ -265,6 +352,20 @@ export default function AdminDashboard() {
             <div className="modal-actions">
               <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setConfirmModal(null)}>Cancel</button>
               <button className="btn-primary" onClick={executeStatusChange}>Yes, Update</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Photo Confirmation Modal */}
+      {deletePhotoModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2 className="title" style={{ fontSize: "18px" }}>Delete Photo</h2>
+            <p className="subtitle">Are you sure you want to delete this ID photo? This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setDeletePhotoModal(null)}>Cancel</button>
+              <button className="btn-primary" style={{ background: "#ef4444", border: "none" }} onClick={executePhotoDelete}>Yes, Delete</button>
             </div>
           </div>
         </div>
