@@ -57,6 +57,9 @@ export async function POST(request) {
 
     if (dbError) {
       console.error("DB error:", dbError);
+      if (dbError.code === '23505') {
+        return NextResponse.json({ error: "Duplicate Entry: This Voter ID/EPIC No has already been submitted." }, { status: 409 });
+      }
       return NextResponse.json({ error: "Failed to save submission", details: dbError }, { status: 500 });
     }
 

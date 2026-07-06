@@ -19,6 +19,7 @@ export default function AdminDashboard() {
   const [deletePhotoModal, setDeletePhotoModal] = useState(null); // { id, url }
   const [editModal, setEditModal] = useState(null);
   const [deleteRecordModal, setDeleteRecordModal] = useState(null);
+  const [addModal, setAddModal] = useState(false);
 
   const showToast = (msg) => {
     setToast(msg);
@@ -196,6 +197,30 @@ export default function AdminDashboard() {
     }
   };
 
+  const executeAddRecord = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+      const res = await fetch("/api/submissions", {
+        method: "POST",
+        body: formData,
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        showToast("Record added successfully!");
+        setAddModal(false);
+        fetchData(); // Refresh the list to get the new record with its ID
+      } else {
+        showToast(data.error || "Failed to add record.");
+      }
+    } catch (err) {
+      showToast("Failed to connect. Please check your connection.");
+    }
+  };
+
   const getStatusColor = (status) => {
     if (status === 'Done' || status === 'Found in 2002 Roll') return 'var(--success-color)';
     if (status === 'Documents Issue' || status === 'Not Found') return '#ef4444'; // Red
@@ -259,11 +284,22 @@ export default function AdminDashboard() {
           <h1 className="title" style={{ textAlign: "left", marginBottom: 0 }}>Admin Dashboard</h1>
           <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Manage voter submissions</p>
         </div>
-        <a href="/api/admin/export" download>
-          <button className="btn-primary btn-success" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px" }}>
-            ↓ Download Excel
+        <div className="admin-actions">
+          <button onClick={() => setAddModal(true)} className="btn-primary" style={{ flexShrink: 0, margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "var(--accent-color)", whiteSpace: "nowrap" }}>
+            + Add Submission
           </button>
-        </a>
+          <a href="/api/admin/export" download style={{ flexShrink: 0 }}>
+            <button className="btn-primary btn-success" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", whiteSpace: "nowrap" }}>
+              ↓ Download Excel
+            </button>
+          </a>
+          <a href="/dashboard" style={{ flexShrink: 0 }}>
+            <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#4f46e5", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+              Dashboard
+            </button>
+          </a>
+        </div>
       </div>
 
       <div className="insights-grid" style={{ overflowX: "auto", display: "flex", flexWrap: "nowrap", paddingBottom: "10px" }}>
@@ -483,6 +519,45 @@ export default function AdminDashboard() {
               <div className="modal-actions" style={{ marginTop: "24px" }}>
                 <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setEditModal(null)}>Cancel</button>
                 <button type="submit" className="btn-primary">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Record Modal */}
+      {addModal && (
+        <div className="modal-overlay">
+          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }}>
+            <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Add New Submission</h2>
+            <form onSubmit={executeAddRecord}>
+              <div className="form-group">
+                <label className="form-label">Name *</label>
+                <input type="text" name="name" className="form-input" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Mobile Number *</label>
+                <input type="tel" name="mobile" className="form-input" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Voter ID/EPIC No *</label>
+                <input type="text" name="epic_no" className="form-input" required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">House No (Optional)</label>
+                <input type="text" name="house_no" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Status</label>
+                <select name="status" className="form-input" defaultValue="Pending">
+                  <option value="Pending">Pending</option>
+                  <option value="Done">Done</option>
+                  <option value="Documents Issue">Documents Issue</option>
+                </select>
+              </div>
+              <div className="modal-actions" style={{ marginTop: "24px" }}>
+                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setAddModal(false)}>Cancel</button>
+                <button type="submit" className="btn-primary">Add Record</button>
               </div>
             </form>
           </div>

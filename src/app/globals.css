@@ -402,6 +402,26 @@ body {
   min-width: 200px;
 }
 
+.admin-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  justify-content: flex-start;
+  padding-bottom: 4px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.admin-actions::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 600px) {
+  .admin-actions {
+    justify-content: flex-end;
+  }
+}
+
 /* Vertical Data Cards (Mobile First & Search Results) */
 .data-grid {
   display: grid;

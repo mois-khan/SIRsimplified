@@ -8,8 +8,12 @@ CREATE TABLE submissions (
     id_photo_url TEXT,
     status VARCHAR(50) DEFAULT 'Pending',
     whatsapp_joined BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT epic_unique UNIQUE (epic_no)
 );
+
+-- Note: If you are adding this constraint to an existing database, run:
+-- ALTER TABLE submissions ADD CONSTRAINT epic_unique UNIQUE (epic_no);
 
 -- Table: electors_2002
 CREATE TABLE electors_2002 (

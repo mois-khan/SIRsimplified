@@ -23,7 +23,8 @@ export default function Home() {
       if (res.ok) {
         setIsSuccess(true);
       } else {
-        alert("Something went wrong. Please try again.");
+        const data = await res.json();
+        alert(data.error || "Something went wrong. Please try again.");
       }
     } catch (err) {
       alert("Failed to connect. Please check your connection.");
