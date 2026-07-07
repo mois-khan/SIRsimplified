@@ -161,6 +161,7 @@ export default function AdminDashboard() {
           mobile: editModal.mobile,
           epic_no: editModal.epic_no,
           house_no: editModal.house_no,
+          booth_no: editModal.booth_no,
           status: editModal.status,
           notes: editModal.notes
         })
@@ -360,7 +361,7 @@ export default function AdminDashboard() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                 <div className="data-field">
                   <span className="data-label">Name</span>
-                  <span className="data-value" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.3px" }}>{sub.name}</span>
+                  <span className="data-value" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.3px", overflowWrap: "break-word" }}>{sub.name}</span>
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button 
@@ -403,9 +404,15 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="data-field">
-                <span className="data-label">House No</span>
-                <span className="data-value">{sub.house_no || "N/A"}</span>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginTop: "12px" }}>
+                <div className="data-field">
+                  <span className="data-label">House No</span>
+                  <span className="data-value">{sub.house_no || "N/A"}</span>
+                </div>
+                <div className="data-field">
+                  <span className="data-label">Booth No</span>
+                  <span className="data-value">{sub.booth_no || "N/A"}</span>
+                </div>
               </div>
 
               <div className="data-field" style={{ marginTop: "8px" }}>
@@ -424,17 +431,17 @@ export default function AdminDashboard() {
               {sub.notes && (
                 <div className="data-field" style={{ marginTop: "12px", background: "rgba(0,0,0,0.02)", padding: "8px", borderRadius: "6px", border: "1px solid var(--border-color)" }}>
                   <span className="data-label" style={{ marginBottom: "4px" }}>Admin Note</span>
-                  <div style={{ fontSize: "14px", color: "var(--text-primary)", whiteSpace: "pre-wrap", display: "-webkit-box", WebkitLineClamp: expandedNotes.has(sub.id) ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-                    {sub.notes}
+                  <div style={{ fontSize: "14px", color: "var(--text-primary)", whiteSpace: "pre-wrap", display: "inline" }}>
+                    {expandedNotes.has(sub.id) || sub.notes.length <= 40 ? sub.notes : `${sub.notes.substring(0, 40)}... `}
+                    {sub.notes.length > 40 && (
+                      <button 
+                        onClick={() => toggleNote(sub.id)}
+                        style={{ background: "none", border: "none", color: "var(--accent-color)", fontSize: "12px", cursor: "pointer", padding: 0, fontWeight: "600", display: "inline-block", marginLeft: "4px" }}
+                      >
+                        {expandedNotes.has(sub.id) ? "Show Less" : "Read More"}
+                      </button>
+                    )}
                   </div>
-                  {sub.notes.length > 80 && (
-                    <button 
-                      onClick={() => toggleNote(sub.id)}
-                      style={{ background: "none", border: "none", color: "var(--accent-color)", fontSize: "12px", cursor: "pointer", padding: "4px 0 0 0", fontWeight: "600" }}
-                    >
-                      {expandedNotes.has(sub.id) ? "Show Less" : "Read More"}
-                    </button>
-                  )}
                 </div>
               )}
 
@@ -537,6 +544,10 @@ export default function AdminDashboard() {
                 <input type="text" className="form-input" value={editModal.house_no || ""} onChange={e => setEditModal({...editModal, house_no: e.target.value})} />
               </div>
               <div className="form-group">
+                <label className="form-label">Booth No</label>
+                <input type="text" className="form-input" value={editModal.booth_no || ""} onChange={e => setEditModal({...editModal, booth_no: e.target.value})} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Status</label>
                 <select 
                   className="form-input" 
@@ -588,6 +599,10 @@ export default function AdminDashboard() {
               <div className="form-group">
                 <label className="form-label">House No (Optional)</label>
                 <input type="text" name="house_no" className="form-input" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Booth No (Optional)</label>
+                <input type="text" name="booth_no" className="form-input" />
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>

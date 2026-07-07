@@ -143,6 +143,17 @@ export default function Home() {
         </div>
 
         <div className="form-group">
+          <label className="form-label">Booth Number (Optional)</label>
+          <input 
+            type="text" 
+            name="booth_no" 
+            className="form-input" 
+            placeholder="e.g. 45"
+            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+          />
+        </div>
+
+        <div className="form-group">
           <label className="form-label">Enumeration Form Upload (Optional)</label>
           <div className="file-upload-wrapper">
             <div className="file-upload-btn">

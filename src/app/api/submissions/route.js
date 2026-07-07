@@ -6,8 +6,9 @@ export async function POST(request) {
     const formData = await request.formData();
     const name = formData.get("name");
     const mobile = formData.get("mobile");
-    const epic_no = formData.get("epic_no");
-    const house_no = formData.get("house_no") || null;
+    const epic_no = formData.get("epic_no")?.toUpperCase();
+    const house_no = formData.get("house_no")?.toUpperCase() || null;
+    const booth_no = formData.get("booth_no")?.toUpperCase() || null;
     const photo = formData.get("photo");
     const status = formData.get("status") || "Pending";
     const notes = formData.get("notes") || null;
@@ -50,6 +51,7 @@ export async function POST(request) {
           mobile,
           epic_no,
           house_no,
+          booth_no,
           id_photo_url,
           status,
           notes,
