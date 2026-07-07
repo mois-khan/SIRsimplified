@@ -82,11 +82,11 @@ export default function Home() {
           <label className="form-label">Enumeration Form Status</label>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Pending" defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)" }} />
+              <input type="radio" name="status" value="Pending" style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)" }} />
               Pending (Not yet filled)
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Done" style={{ width: "18px", height: "18px", accentColor: "var(--success-color)" }} />
+              <input type="radio" name="status" value="Done" defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--success-color)" }} />
               Form Fill Up Done
             </label>
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
@@ -103,7 +103,8 @@ export default function Home() {
             name="name" 
             className="form-input" 
             required 
-            placeholder="e.g. Zaker"
+            placeholder="e.g. ZAKER"
+            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </div>
 
@@ -126,6 +127,7 @@ export default function Home() {
             className="form-input" 
             required 
             placeholder="e.g. YAV1234567"
+            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </div>
 
@@ -136,6 +138,7 @@ export default function Home() {
             name="house_no" 
             className="form-input" 
             placeholder="e.g. 1-23/A"
+            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
           />
         </div>
 

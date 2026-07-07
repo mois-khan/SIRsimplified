@@ -10,6 +10,7 @@ export async function POST(request) {
     const house_no = formData.get("house_no") || null;
     const photo = formData.get("photo");
     const status = formData.get("status") || "Pending";
+    const notes = formData.get("notes") || null;
 
     if (!name || !mobile || !epic_no) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -51,6 +52,7 @@ export async function POST(request) {
           house_no,
           id_photo_url,
           status,
+          notes,
         }
       ])
       .select();

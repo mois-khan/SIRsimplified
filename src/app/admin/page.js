@@ -20,6 +20,16 @@ export default function AdminDashboard() {
   const [editModal, setEditModal] = useState(null);
   const [deleteRecordModal, setDeleteRecordModal] = useState(null);
   const [addModal, setAddModal] = useState(false);
+  const [expandedNotes, setExpandedNotes] = useState(new Set());
+
+  const toggleNote = (id) => {
+    setExpandedNotes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const showToast = (msg) => {
     setToast(msg);
@@ -151,7 +161,8 @@ export default function AdminDashboard() {
           mobile: editModal.mobile,
           epic_no: editModal.epic_no,
           house_no: editModal.house_no,
-          status: editModal.status
+          status: editModal.status,
+          notes: editModal.notes
         })
         .eq('id', editModal.id);
 
@@ -410,6 +421,23 @@ export default function AdminDashboard() {
                 </select>
               </div>
 
+              {sub.notes && (
+                <div className="data-field" style={{ marginTop: "12px", background: "rgba(0,0,0,0.02)", padding: "8px", borderRadius: "6px", border: "1px solid var(--border-color)" }}>
+                  <span className="data-label" style={{ marginBottom: "4px" }}>Admin Note</span>
+                  <div style={{ fontSize: "14px", color: "var(--text-primary)", whiteSpace: "pre-wrap", display: "-webkit-box", WebkitLineClamp: expandedNotes.has(sub.id) ? "unset" : 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    {sub.notes}
+                  </div>
+                  {sub.notes.length > 80 && (
+                    <button 
+                      onClick={() => toggleNote(sub.id)}
+                      style={{ background: "none", border: "none", color: "var(--accent-color)", fontSize: "12px", cursor: "pointer", padding: "4px 0 0 0", fontWeight: "600" }}
+                    >
+                      {expandedNotes.has(sub.id) ? "Show Less" : "Read More"}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {sub.id_photo_url ? (
                 <div style={{ marginTop: "12px", borderTop: "1px solid var(--border-color)", paddingTop: "12px", display: "flex", gap: "16px" }}>
                   <button 
@@ -510,11 +538,25 @@ export default function AdminDashboard() {
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
-                <select className="form-input" value={editModal.status || "Pending"} onChange={e => setEditModal({...editModal, status: e.target.value})}>
+                <select 
+                  className="form-input" 
+                  value={editModal.status || "Pending"} 
+                  onChange={(e) => setEditModal({...editModal, status: e.target.value})}
+                >
                   <option value="Pending">Pending</option>
                   <option value="Done">Done</option>
                   <option value="Documents Issue">Documents Issue</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Admin Note (Optional)</label>
+                <textarea 
+                  className="form-input" 
+                  rows="3" 
+                  placeholder="Add any private notes here..."
+                  value={editModal.notes || ""} 
+                  onChange={(e) => setEditModal({...editModal, notes: e.target.value})}
+                ></textarea>
               </div>
               <div className="modal-actions" style={{ marginTop: "24px" }}>
                 <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setEditModal(null)}>Cancel</button>
@@ -554,6 +596,10 @@ export default function AdminDashboard() {
                   <option value="Done">Done</option>
                   <option value="Documents Issue">Documents Issue</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Admin Note (Optional)</label>
+                <textarea name="notes" className="form-input" rows="3" placeholder="Add any private notes here..."></textarea>
               </div>
               <div className="modal-actions" style={{ marginTop: "24px" }}>
                 <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setAddModal(false)}>Cancel</button>
