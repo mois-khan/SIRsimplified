@@ -512,8 +512,8 @@ export default function AdminDashboard() {
 
       {/* Confirmation Modal */}
       {confirmModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px" }}>Confirm Status Change</h2>
             <p className="subtitle">Are you sure you want to change the status to <strong>{confirmModal.newStatus}</strong>?</p>
             <div className="modal-actions">
@@ -526,8 +526,8 @@ export default function AdminDashboard() {
 
       {/* Delete Photo Confirmation Modal */}
       {deletePhotoModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="modal-overlay" onClick={() => setDeletePhotoModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px" }}>Delete Form Upload</h2>
             <p className="subtitle">Are you sure you want to delete this enumeration form upload? This action cannot be undone.</p>
             <div className="modal-actions">
@@ -540,8 +540,8 @@ export default function AdminDashboard() {
 
       {/* Edit Record Modal */}
       {editModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }}>
+        <div className="modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }} onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Edit Submission</h2>
             <form onSubmit={executeEdit}>
               <div className="form-group">
@@ -598,8 +598,8 @@ export default function AdminDashboard() {
 
       {/* Add Record Modal */}
       {addModal && (
-        <div className="modal-overlay">
-          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }}>
+        <div className="modal-overlay" onClick={() => setAddModal(false)}>
+          <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }} onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Add New Submission</h2>
             <form onSubmit={executeAddRecord}>
               <div className="form-group">
@@ -646,8 +646,8 @@ export default function AdminDashboard() {
 
       {/* Delete Record Confirmation Modal */}
       {deleteRecordModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="modal-overlay" onClick={() => setDeleteRecordModal(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px" }}>Delete Submission</h2>
             <p className="subtitle">Are you sure you want to permanently delete <strong>{deleteRecordModal.name}</strong>'s record? This action cannot be undone.</p>
             <div className="modal-actions">

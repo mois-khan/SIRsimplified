@@ -511,6 +511,14 @@ body {
   width: 100%;
   max-width: 400px;
   text-align: center;
+  max-height: 90vh;
+  overflow-y: auto;
+  /* Hide scrollbar */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.modal-content::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 .modal-actions {
   display: flex;
