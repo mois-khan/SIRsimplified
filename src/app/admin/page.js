@@ -39,6 +39,7 @@ export default function AdminDashboard() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (passcode === "501401") {
+      localStorage.setItem("adminAuth", "501401");
       setIsAuthenticated(true);
       fetchData();
     } else {
@@ -66,6 +67,13 @@ export default function AdminDashboard() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (localStorage.getItem("adminAuth") === "501401") {
+      setIsAuthenticated(true);
+      fetchData();
+    }
+  }, []);
 
   const confirmStatusChange = (id, newStatus) => {
     setConfirmModal({ id, newStatus });
@@ -234,6 +242,7 @@ export default function AdminDashboard() {
   };
 
   const getStatusColor = (status) => {
+    if (status === 'DONE & ONLINE SIR COMPLETE') return '#10b981'; // Green
     if (status === 'Done' || status === 'Found in 2002 Roll') return 'var(--success-color)';
     if (status === 'Documents Issue' || status === 'Not Found') return '#ef4444'; // Red
     if (status === 'Followed Up') return '#eab308'; // Yellow
@@ -268,11 +277,14 @@ export default function AdminDashboard() {
   const pending = submissions.filter(s => !s.status || s.status === 'Pending').length;
   const done = submissions.filter(s => s.status === 'Done').length;
   const docIssue = submissions.filter(s => s.status === 'Documents Issue').length;
+  const notesCount = submissions.filter(s => s.notes && s.notes.trim() !== "").length;
 
   // Filtered Data (Searches across all fields AND matches active chip)
   const filteredData = submissions.filter(s => {
     // 1. Check chip filter
-    if (statusFilter !== "All") {
+    if (statusFilter === "Notes") {
+      if (!s.notes || s.notes.trim() === "") return false;
+    } else if (statusFilter !== "All") {
       const sStatus = s.status || "Pending";
       if (sStatus !== statusFilter) return false;
     }
@@ -330,6 +342,10 @@ export default function AdminDashboard() {
         <div className={`insight-card ${statusFilter === "Documents Issue" ? "active" : ""}`} onClick={() => setStatusFilter("Documents Issue")} style={{ flexShrink: 0 }}>
           <div className="insight-label">Doc Issue</div>
           <div className="insight-value">{docIssue}</div>
+        </div>
+        <div className={`insight-card ${statusFilter === "Notes" ? "active" : ""}`} onClick={() => setStatusFilter("Notes")} style={{ flexShrink: 0, borderLeftColor: "var(--accent-color)" }}>
+          <div className="insight-label">Notes</div>
+          <div className="insight-value">{notesCount}</div>
         </div>
       </div>
 
@@ -425,6 +441,7 @@ export default function AdminDashboard() {
                   <option value="Pending">Pending</option>
                   <option value="Done">Done</option>
                   <option value="Documents Issue">Documents Issue</option>
+                  <option value="DONE & ONLINE SIR COMPLETE">DONE & ONLINE SIR COMPLETE</option>
                 </select>
               </div>
 
@@ -557,6 +574,7 @@ export default function AdminDashboard() {
                   <option value="Pending">Pending</option>
                   <option value="Done">Done</option>
                   <option value="Documents Issue">Documents Issue</option>
+                  <option value="DONE & ONLINE SIR COMPLETE">DONE & ONLINE SIR COMPLETE</option>
                 </select>
               </div>
               <div className="form-group">
@@ -606,10 +624,11 @@ export default function AdminDashboard() {
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
-                <select name="status" className="form-input" defaultValue="Pending">
+                <select name="status" className="form-input" defaultValue="Done">
                   <option value="Pending">Pending</option>
                   <option value="Done">Done</option>
                   <option value="Documents Issue">Documents Issue</option>
+                  <option value="DONE & ONLINE SIR COMPLETE">DONE & ONLINE SIR COMPLETE</option>
                 </select>
               </div>
               <div className="form-group">

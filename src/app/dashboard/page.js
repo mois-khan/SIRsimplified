@@ -24,6 +24,7 @@ export default function Dashboard() {
   const handleLogin = (e) => {
     e.preventDefault();
     if (passcode === "501401") {
+      localStorage.setItem("adminAuth", "501401");
       setIsAuthenticated(true);
       fetchData();
     } else {
@@ -45,6 +46,13 @@ export default function Dashboard() {
     }
   };
 
+  useEffect(() => {
+    if (localStorage.getItem("adminAuth") === "501401") {
+      setIsAuthenticated(true);
+      fetchData();
+    }
+  }, []);
+
   // Prepare data for charts
   const getDayWiseData = () => {
     const counts = {};
@@ -64,7 +72,7 @@ export default function Dashboard() {
   };
 
   const getStatusData = () => {
-    const counts = { "Pending": 0, "Done": 0, "Documents Issue": 0, "Other": 0 };
+    const counts = { "Pending": 0, "Done": 0, "Documents Issue": 0, "DONE & ONLINE SIR COMPLETE": 0, "Other": 0 };
     submissions.forEach(sub => {
       const status = sub.status || "Pending";
       if (counts[status] !== undefined) {
@@ -77,6 +85,7 @@ export default function Dashboard() {
       { name: 'Pending', value: counts["Pending"], color: '#9ca3af' },
       { name: 'Done', value: counts["Done"], color: '#10b981' },
       { name: 'Doc Issue', value: counts["Documents Issue"], color: '#ef4444' },
+      { name: 'Online SIR', value: counts["DONE & ONLINE SIR COMPLETE"], color: '#3b82f6' }
     ].filter(item => item.value > 0);
   };
 
@@ -164,6 +173,32 @@ export default function Dashboard() {
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
           
+          {/* KPI Cards */}
+          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid var(--accent-color)" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Total Forms</p>
+              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>{submissions.length}</h2>
+            </div>
+            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #10b981" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Completed (Done)</p>
+              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+                {statusData.find(s => s.name === 'Done')?.value || 0}
+              </h2>
+            </div>
+            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #3b82f6" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Online SIR Complete</p>
+              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+                {statusData.find(s => s.name === 'Online SIR')?.value || 0}
+              </h2>
+            </div>
+            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #ef4444" }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Document Issues</p>
+              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+                {statusData.find(s => s.name === 'Doc Issue')?.value || 0}
+              </h2>
+            </div>
+          </div>
+
           {/* Day Wise Bar Chart */}
           <div className="card" style={{ padding: "24px" }}>
             <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>Forms Collected (Last 7 Days)</h3>
@@ -202,26 +237,6 @@ export default function Dashboard() {
                   <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "20px" }} />
                 </PieChart>
               </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* KPI Cards */}
-          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid var(--accent-color)" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Total Forms</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>{submissions.length}</h2>
-            </div>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #10b981" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Completed (Done)</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
-                {statusData.find(s => s.name === 'Done')?.value || 0}
-              </h2>
-            </div>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #ef4444" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Document Issues</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
-                {statusData.find(s => s.name === 'Doc Issue')?.value || 0}
-              </h2>
             </div>
           </div>
 

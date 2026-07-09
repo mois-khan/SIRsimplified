@@ -1,6 +1,43 @@
 "use client";
 import { useState } from "react";
 
+const compressImage = async (file, maxWidth = 1000) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(blob => {
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = error => reject(error);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -13,6 +50,16 @@ export default function Home() {
     setIsSubmitting(true);
 
     const formData = new FormData(e.target);
+    
+    const photoFile = formData.get("photo");
+    if (photoFile && photoFile.size > 0 && photoFile.type.startsWith("image/")) {
+      try {
+        const compressedFile = await compressImage(photoFile);
+        formData.set("photo", compressedFile);
+      } catch (err) {
+        console.warn("Image compression failed, using original", err);
+      }
+    }
     
     try {
       const res = await fetch("/api/submissions", {
@@ -92,6 +139,10 @@ export default function Home() {
             <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
               <input type="radio" name="status" value="Documents Issue" style={{ width: "18px", height: "18px", accentColor: "#ef4444" }} />
               Documents Issue
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
+              <input type="radio" name="status" value="DONE & ONLINE SIR COMPLETE" style={{ width: "18px", height: "18px", accentColor: "#10b981" }} />
+              DONE & ONLINE SIR COMPLETE
             </label>
           </div>
         </div>
