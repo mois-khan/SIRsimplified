@@ -96,8 +96,9 @@ export default function Dashboard() {
     const statuses = getStatusData();
     const doneCount = statuses.find(s => s.name === 'Done')?.value || 0;
     const pendingCount = statuses.find(s => s.name === 'Pending')?.value || 0;
+    const onlineCount = statuses.find(s => s.name === 'Online SIR')?.value || 0;
 
-    const reportText = `*Voter Assistance Daily Report*\nDate: *${today}*\n\n📝 *Forms Collected Today:* ${todayCount}\n📊 *Total Forms:* ${submissions.length}\n✅ *Completed:* ${doneCount}\n⏳ *Pending:* ${pendingCount}\n\n*Great work team! Keep it up! 🚀*`;
+    const reportText = `*Voter Assistance Daily Report*\nDate: *${today}*\n\n📝 Forms Collected Today: *${todayCount}*\n📊 Total Forms: *${submissions.length}*\n✅ Completed: *${doneCount}*\n🌐 Online SIR Complete: *${onlineCount}*\n⏳ Pending: *${pendingCount}*\n\n*Great work team! Keep it up! 🚀*`;
 
     try {
       if (navigator.share) {

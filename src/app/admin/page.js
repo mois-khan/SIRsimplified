@@ -2,6 +2,39 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 
+const compressImage = async (file, maxWidth = 1000) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = event => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => {
+          const compressedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now(),
+          });
+          resolve(compressedFile);
+        }, 'image/jpeg', 0.8);
+      };
+      img.onerror = error => reject(error);
+    };
+    reader.onerror = error => reject(error);
+  });
+};
+
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState("");
@@ -20,7 +53,30 @@ export default function AdminDashboard() {
   const [editModal, setEditModal] = useState(null);
   const [deleteRecordModal, setDeleteRecordModal] = useState(null);
   const [addModal, setAddModal] = useState(false);
+  const [addPhotoName, setAddPhotoName] = useState("");
   const [expandedNotes, setExpandedNotes] = useState(new Set());
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 300);
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'n' || e.key === 'N') {
+        e.preventDefault();
+        setAddModal(true);
+      }
+      if (e.key === '/') {
+        e.preventDefault();
+        document.querySelector('.search-bar')?.focus();
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   const toggleNote = (id) => {
     setExpandedNotes(prev => {
@@ -221,6 +277,16 @@ export default function AdminDashboard() {
     e.preventDefault();
     const formData = new FormData(e.target);
     
+    const photoFile = formData.get("photo");
+    if (photoFile && photoFile.size > 0 && photoFile.type.startsWith("image/")) {
+      try {
+        const compressedFile = await compressImage(photoFile);
+        formData.set("photo", compressedFile);
+      } catch (err) {
+        console.warn("Image compression failed, using original", err);
+      }
+    }
+    
     try {
       const res = await fetch("/api/submissions", {
         method: "POST",
@@ -232,6 +298,7 @@ export default function AdminDashboard() {
       if (res.ok) {
         showToast("Record added successfully!");
         setAddModal(false);
+        setAddPhotoName("");
         fetchData(); // Refresh the list to get the new record with its ID
       } else {
         showToast(data.error || "Failed to add record.");
@@ -603,7 +670,7 @@ export default function AdminDashboard() {
 
       {/* Add Record Modal */}
       {addModal && (
-        <div className="modal-overlay" onClick={() => setAddModal(false)}>
+        <div className="modal-overlay" onClick={() => { setAddModal(false); setAddPhotoName(""); }}>
           <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }} onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Add New Submission</h2>
             <form onSubmit={executeAddRecord}>
@@ -640,8 +707,25 @@ export default function AdminDashboard() {
                 <label className="form-label">Admin Note (Optional)</label>
                 <textarea name="notes" className="form-input" rows="3" placeholder="Add any private notes here..."></textarea>
               </div>
+              <div className="form-group">
+                <label className="form-label">Enumeration Form Upload (Optional)</label>
+                <div className="file-upload-wrapper">
+                  <div className="file-upload-btn" style={{ padding: "8px 12px", background: "var(--bg-color)", border: "1px dashed var(--border-color)", borderRadius: "var(--border-radius)", color: "var(--text-secondary)", fontSize: "14px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+                    {addPhotoName ? addPhotoName : "Tap to upload Form"}
+                  </div>
+                  <input 
+                    type="file" 
+                    name="photo" 
+                    accept="image/*"
+                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", opacity: 0, cursor: "pointer" }}
+                    onChange={(e) => {
+                      if (e.target.files[0]) setAddPhotoName(e.target.files[0].name);
+                    }}
+                  />
+                </div>
+              </div>
               <div className="modal-actions" style={{ marginTop: "24px" }}>
-                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setAddModal(false)}>Cancel</button>
+                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => { setAddModal(false); setAddPhotoName(""); }}>Cancel</button>
                 <button type="submit" className="btn-primary">Add Record</button>
               </div>
             </form>
@@ -688,6 +772,16 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+      
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{ position: 'fixed', bottom: '24px', right: '24px', width: '48px', height: '48px', borderRadius: '50%', background: 'var(--accent-color)', color: 'white', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', zIndex: 1000 }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        </button>
+      )}
     </div>
   );
 }
