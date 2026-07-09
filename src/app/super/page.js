@@ -725,6 +725,8 @@ export default function AdminDashboard() {
           )}
         </div>
       )}
+      </>
+      )}
 
       {/* Confirmation Modal */}
       {confirmModal && (
