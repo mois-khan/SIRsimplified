@@ -278,6 +278,7 @@ export default function AdminDashboard() {
   const done = submissions.filter(s => s.status === 'Done').length;
   const docIssue = submissions.filter(s => s.status === 'Documents Issue').length;
   const notesCount = submissions.filter(s => s.notes && s.notes.trim() !== "").length;
+  const onlineCount = submissions.filter(s => s.status === 'DONE & ONLINE SIR COMPLETE').length;
 
   // Filtered Data (Searches across all fields AND matches active chip)
   const filteredData = submissions.filter(s => {
@@ -342,6 +343,10 @@ export default function AdminDashboard() {
         <div className={`insight-card ${statusFilter === "Documents Issue" ? "active" : ""}`} onClick={() => setStatusFilter("Documents Issue")} style={{ flexShrink: 0 }}>
           <div className="insight-label">Doc Issue</div>
           <div className="insight-value">{docIssue}</div>
+        </div>
+        <div className={`insight-card ${statusFilter === "DONE & ONLINE SIR COMPLETE" ? "active" : ""}`} onClick={() => setStatusFilter("DONE & ONLINE SIR COMPLETE")} style={{ flexShrink: 0, borderLeftColor: "#10b981" }}>
+          <div className="insight-label">Online SIR</div>
+          <div className="insight-value">{onlineCount}</div>
         </div>
         <div className={`insight-card ${statusFilter === "Notes" ? "active" : ""}`} onClick={() => setStatusFilter("Notes")} style={{ flexShrink: 0, borderLeftColor: "var(--accent-color)" }}>
           <div className="insight-label">Notes</div>
