@@ -37,3 +37,19 @@ export async function POST(request) {
     return NextResponse.json({ error: "Server error or table not created yet." }, { status: 500 });
   }
 }
+
+export async function GET(request) {
+  try {
+    const { data, error } = await supabase
+      .from("agents")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    
+    return NextResponse.json({ success: true, agents: data });
+  } catch (error) {
+    console.error("Fetch agents error:", error);
+    return NextResponse.json({ error: "Failed to fetch agents" }, { status: 500 });
+  }
+}

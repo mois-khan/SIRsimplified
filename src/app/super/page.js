@@ -45,6 +45,8 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [agentFilter, setAgentFilter] = useState("All");
+  const [activeTab, setActiveTab] = useState("submissions"); // "submissions" or "agents"
+  const [agentsList, setAgentsList] = useState([]);
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
   const [photoModal, setPhotoModal] = useState(null); // URL of the photo to view
@@ -117,6 +119,12 @@ export default function AdminDashboard() {
       
       if (error) throw error;
       if (data) setSubmissions(data);
+
+      const res = await fetch("/api/agents");
+      const agentsData = await res.json();
+      if (agentsData.success) {
+        setAgentsList(agentsData.agents || []);
+      }
     } catch (err) {
       console.error("Fetch failed or timed out:", err);
       setFetchError(true);
@@ -261,6 +269,43 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleAgentStatus = async (id, newStatus) => {
+    try {
+      const res = await fetch(`/api/agents/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAgentsList(agentsList.map(a => a.id === id ? data.data : a));
+        showToast(`Agent marked as ${newStatus}`);
+      } else {
+        showToast(data.error || "Failed to update agent");
+      }
+    } catch (err) {
+      showToast("Failed to connect");
+    }
+  };
+
+  const handleAgentDelete = async (id) => {
+    if (!confirm("Are you sure you want to permanently delete this agent? They will no longer be able to log in or submit forms.")) return;
+    try {
+      const res = await fetch(`/api/agents/${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setAgentsList(agentsList.filter(a => a.id !== id));
+        showToast("Agent permanently deleted");
+      } else {
+        const data = await res.json();
+        showToast(data.error || "Failed to delete agent");
+      }
+    } catch (err) {
+      showToast("Failed to connect");
+    }
+  };
+
   const executeAddRecord = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -365,29 +410,107 @@ export default function AdminDashboard() {
   });
 
   return (
-    <div className="admin-container">
-      <div className="admin-header">
-        <div>
-          <h1 className="title" style={{ textAlign: "left", marginBottom: 0 }}>Super Admin Dashboard</h1>
-          <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Oversee all agent submissions</p>
-        </div>
-        <div className="admin-actions">
-          <button onClick={() => setAddModal(true)} className="btn-primary" style={{ flexShrink: 0, margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "var(--accent-color)", whiteSpace: "nowrap" }}>
-            + Add Submission
+    <div className="container" style={{ paddingBottom: "80px" }}>
+      {toast && <div className="toast">{toast}</div>}
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+        <h1 className="title" style={{ margin: 0 }}>Super Admin</h1>
+        <div style={{ display: "flex", gap: "8px", overflowX: "auto", flexWrap: "nowrap" }}>
+          <button 
+            className="btn-primary" 
+            onClick={() => setActiveTab("submissions")}
+            style={{ margin: 0, padding: "6px 16px", width: "auto", fontSize: "14px", borderRadius: "6px", background: activeTab === "submissions" ? "var(--accent-color)" : "transparent", color: activeTab === "submissions" ? "white" : "var(--accent-color)", border: "1px solid var(--accent-color)", whiteSpace: "nowrap" }}
+          >
+            Submissions
           </button>
-          <a href="/api/admin/export" download style={{ flexShrink: 0 }}>
-            <button className="btn-primary btn-success" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", whiteSpace: "nowrap" }}>
-              ↓ Download Excel
-            </button>
-          </a>
-          <a href="/dashboard" style={{ flexShrink: 0 }}>
-            <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#4f46e5", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-              Dashboard
-            </button>
-          </a>
+          <button 
+            className="btn-primary" 
+            onClick={() => setActiveTab("agents")}
+            style={{ margin: 0, padding: "6px 16px", width: "auto", fontSize: "14px", borderRadius: "6px", background: activeTab === "agents" ? "var(--accent-color)" : "transparent", color: activeTab === "agents" ? "white" : "var(--accent-color)", border: "1px solid var(--accent-color)", whiteSpace: "nowrap" }}
+          >
+            Manage Agents
+          </button>
         </div>
       </div>
+
+      {activeTab === "agents" && (
+        <div className="card" style={{ padding: "0", overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+              <thead>
+                <tr style={{ background: "#f8f9fa", borderBottom: "2px solid #eee" }}>
+                  <th style={{ padding: "12px", fontWeight: "600", color: "var(--text-secondary)" }}>Name</th>
+                  <th style={{ padding: "12px", fontWeight: "600", color: "var(--text-secondary)" }}>PIN</th>
+                  <th style={{ padding: "12px", fontWeight: "600", color: "var(--text-secondary)" }}>Status</th>
+                  <th style={{ padding: "12px", fontWeight: "600", color: "var(--text-secondary)", textAlign: "right" }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {agentsList.map(agent => (
+                  <tr key={agent.id} style={{ borderBottom: "1px solid #eee" }}>
+                    <td style={{ padding: "12px", fontWeight: "500" }}>{agent.name}</td>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{agent.pin}</td>
+                    <td style={{ padding: "12px" }}>
+                      <span style={{
+                        padding: "4px 8px",
+                        borderRadius: "12px",
+                        fontSize: "12px",
+                        fontWeight: "500",
+                        background: agent.status === 'approved' ? '#d1fae5' : agent.status === 'rejected' ? '#fee2e2' : '#fef3c7',
+                        color: agent.status === 'approved' ? '#065f46' : agent.status === 'rejected' ? '#991b1b' : '#92400e'
+                      }}>
+                        {agent.status ? agent.status.toUpperCase() : 'PENDING'}
+                      </span>
+                    </td>
+                    <td style={{ padding: "12px", textAlign: "right", display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                      {agent.status !== 'approved' && (
+                        <button onClick={() => handleAgentStatus(agent.id, 'approved')} style={{ padding: "6px 12px", borderRadius: "6px", border: "none", background: "#10b981", color: "white", cursor: "pointer", fontSize: "12px" }}>
+                          Approve
+                        </button>
+                      )}
+                      {agent.status !== 'rejected' && (
+                        <button onClick={() => handleAgentStatus(agent.id, 'rejected')} style={{ padding: "6px 12px", borderRadius: "6px", border: "none", background: "#ef4444", color: "white", cursor: "pointer", fontSize: "12px" }}>
+                          Reject
+                        </button>
+                      )}
+                      <button onClick={() => handleAgentDelete(agent.id)} style={{ padding: "6px 12px", borderRadius: "6px", border: "1px solid #ef4444", background: "transparent", color: "#ef4444", cursor: "pointer", fontSize: "12px" }}>
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {agentsList.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>
+                      No agents found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === "submissions" && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <button className="btn-primary" onClick={() => setAddModal(true)} style={{ margin: 0, padding: "8px 16px", width: "auto" }}>+ Add Submission</button>
+            <div style={{ display: "flex", gap: "8px", overflowX: "auto", flexWrap: "nowrap" }}>
+              <a href="/api/admin/export" target="_blank" style={{ flexShrink: 0 }}>
+                <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#10b981", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  ↓ Download Excel
+                </button>
+              </a>
+              <a href="/dashboard" style={{ flexShrink: 0 }}>
+                <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#4f46e5", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                  Dashboard
+                </button>
+              </a>
+            </div>
+          </div>
 
       <div style={{ marginBottom: "16px", overflowX: "auto", display: "flex", gap: "8px", paddingBottom: "8px" }}>
         {uniqueAgents.map(agent => (
@@ -802,7 +925,7 @@ export default function AdminDashboard() {
         )}
       </div>
       
-      {/* Scroll to Top Button */}
+      {/* Show scroll to top button regardless of tab, but mostly useful for submissions */}
       {showScrollTop && (
         <button 
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}

@@ -28,13 +28,19 @@ export default function AgentLogin({ onLoginSuccess }) {
       const data = await res.json();
       
       if (res.ok) {
-        localStorage.setItem("agent_auth", JSON.stringify(data.agent));
-        onLoginSuccess(data.agent);
+        if (data.agent.status === "pending") {
+          setError("Your account is pending admin approval.");
+        } else if (data.agent.status === "rejected") {
+          setError("Your account access has been revoked.");
+        } else {
+          localStorage.setItem("agent_auth", JSON.stringify(data.agent));
+          onLoginSuccess(data.agent);
+        }
       } else {
         setError(data.error || "Failed to authenticate.");
       }
     } catch (err) {
-      setError("Failed to connect. Have you created the agents table yet?");
+      setError("Failed to connect.");
     } finally {
       setLoading(false);
     }
