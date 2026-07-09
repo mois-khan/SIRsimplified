@@ -14,7 +14,7 @@ const r2 = new S3Client({
 
 export async function DELETE(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { id_photo_url } = body;
 
@@ -32,7 +32,7 @@ export async function DELETE(request, { params }) {
         // New photo: Delete from Cloudflare R2
         try {
           await r2.send(new DeleteObjectCommand({
-            Bucket: "voter-ids",
+            Bucket: process.env.R2_BUCKET_NAME || "enumeration-forms",
             Key: fileName,
           }));
         } catch (r2Error) {
@@ -58,7 +58,7 @@ export async function DELETE(request, { params }) {
 
 export async function POST(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const formData = await request.formData();
     const photo = formData.get("photo");
 
@@ -73,7 +73,7 @@ export async function POST(request, { params }) {
     const buffer = Buffer.from(arrayBuffer);
 
     await r2.send(new PutObjectCommand({
-      Bucket: "voter-ids",
+      Bucket: process.env.R2_BUCKET_NAME || "enumeration-forms",
       Key: fileName,
       Body: buffer,
       ContentType: photo.type,
@@ -92,6 +92,6 @@ export async function POST(request, { params }) {
     return NextResponse.json({ success: true, url: id_photo_url });
   } catch (error) {
     console.error("Upload error:", error);
-    return NextResponse.json({ error: "Failed to upload photo" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "Failed to upload photo" }, { status: 500 });
   }
 }

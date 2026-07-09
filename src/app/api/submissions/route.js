@@ -41,7 +41,7 @@ export async function POST(request) {
         const buffer = Buffer.from(arrayBuffer);
 
         await r2.send(new PutObjectCommand({
-          Bucket: "voter-ids",
+          Bucket: process.env.R2_BUCKET_NAME || "enumeration-forms",
           Key: fileName,
           Body: buffer,
           ContentType: photo.type,
