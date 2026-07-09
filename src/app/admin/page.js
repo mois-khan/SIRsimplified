@@ -146,28 +146,21 @@ export default function AdminDashboard() {
     if (!file) return;
 
     setUploadingPhotoId(id);
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${id}-${Math.random()}.${fileExt}`;
 
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('voter_ids')
-        .upload(fileName, file, { cacheControl: '3600', upsert: false });
+      const compressedFile = await compressImage(file);
+      const formData = new FormData();
+      formData.append("photo", compressedFile);
 
-      if (uploadError) throw uploadError;
+      const res = await fetch(`/api/submissions/${id}`, {
+        method: "POST",
+        body: formData,
+      });
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('voter_ids')
-        .getPublicUrl(fileName);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to upload photo");
 
-      const { error: dbError } = await supabase
-        .from('submissions')
-        .update({ id_photo_url: publicUrl })
-        .eq('id', id);
-
-      if (dbError) throw dbError;
-
-      setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, id_photo_url: publicUrl } : sub));
+      setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, id_photo_url: data.url } : sub));
       showToast("Photo uploaded successfully!");
     } catch (err) {
       console.error("Upload error:", err);

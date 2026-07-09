@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../../../lib/supabase";
-import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Configure Cloudflare R2 Client
 const r2 = new S3Client({
@@ -53,5 +53,45 @@ export async function DELETE(request, { params }) {
   } catch (error) {
     console.error("Delete record error:", error);
     return NextResponse.json({ error: "Failed to delete record" }, { status: 500 });
+  }
+}
+
+export async function POST(request, { params }) {
+  try {
+    const { id } = params;
+    const formData = await request.formData();
+    const photo = formData.get("photo");
+
+    if (!photo || photo.size === 0) {
+      return NextResponse.json({ error: "No photo provided" }, { status: 400 });
+    }
+
+    const fileExt = photo.name.split('.').pop();
+    const fileName = `${id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+
+    const arrayBuffer = await photo.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    await r2.send(new PutObjectCommand({
+      Bucket: "voter-ids",
+      Key: fileName,
+      Body: buffer,
+      ContentType: photo.type,
+    }));
+
+    const publicDomain = process.env.R2_PUBLIC_URL?.replace(/\/$/, "");
+    const id_photo_url = `${publicDomain}/${fileName}`;
+
+    const { error: dbError } = await supabase
+      .from('submissions')
+      .update({ id_photo_url })
+      .eq('id', id);
+
+    if (dbError) throw dbError;
+
+    return NextResponse.json({ success: true, url: id_photo_url });
+  } catch (error) {
+    console.error("Upload error:", error);
+    return NextResponse.json({ error: "Failed to upload photo" }, { status: 500 });
   }
 }
