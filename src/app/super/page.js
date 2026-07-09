@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import AgentLogin from "../../components/AgentLogin";
 
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
@@ -37,14 +36,15 @@ const compressImage = async (file, maxWidth = 800) => {
 };
 
 export default function AdminDashboard() {
-  const [agent, setAgent] = useState(null);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passcode, setPasscode] = useState("");
   const [error, setError] = useState("");
   
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [agentFilter, setAgentFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
   const [photoModal, setPhotoModal] = useState(null); // URL of the photo to view
@@ -93,6 +93,17 @@ export default function AdminDashboard() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (passcode === "1001") {
+      localStorage.setItem("superAuth", "1001");
+      setIsAuthenticated(true);
+      fetchData();
+    } else {
+      setError("Incorrect passcode");
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     setFetchError(false);
@@ -115,14 +126,10 @@ export default function AdminDashboard() {
   };
 
   useEffect(() => {
-    const cached = localStorage.getItem("agent_auth");
-    if (cached) {
-      try {
-        setAgent(JSON.parse(cached));
-        fetchData();
-      } catch (e) {}
+    if (localStorage.getItem("superAuth") === "1001") {
+      setIsAuthenticated(true);
+      fetchData();
     }
-    setIsCheckingAuth(false);
   }, []);
 
   const confirmStatusChange = (id, newStatus) => {
@@ -221,7 +228,8 @@ export default function AdminDashboard() {
           house_no: editModal.house_no,
           booth_no: editModal.booth_no,
           status: editModal.status,
-          notes: editModal.notes
+          notes: editModal.notes,
+          submitted_by: editModal.submitted_by
         })
         .eq('id', editModal.id);
 
@@ -263,7 +271,6 @@ export default function AdminDashboard() {
   const executeAddRecord = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    formData.append("submitted_by", agent.name);
     
     const photoFile = formData.get("photo");
     if (photoFile && photoFile.size > 0 && photoFile.type.startsWith("image/")) {
@@ -304,26 +311,45 @@ export default function AdminDashboard() {
     return 'var(--border-color)'; // Default/Pending
   };
 
-  if (isCheckingAuth) return <div style={{ padding: "40px", textAlign: "center" }}>Loading...</div>;
-
-  if (!agent) {
+  if (!isAuthenticated) {
     return (
-      <div className="container">
-        <AgentLogin onLoginSuccess={(ag) => { setAgent(ag); fetchData(); }} />
+      <div className="card" style={{ maxWidth: "400px", margin: "40px auto" }}>
+        <h1 className="title">Admin Access</h1>
+        <p className="subtitle">Enter the 6-digit admin passcode</p>
+        <form onSubmit={handleLogin}>
+          <div className="form-group">
+            <input 
+              type="password" 
+              className="form-input" 
+              value={passcode}
+              onChange={e => setPasscode(e.target.value)}
+              placeholder="Enter passcode"
+              autoFocus
+            />
+          </div>
+          {error && <p style={{ color: "#ef4444", fontSize: "13px", marginBottom: "10px", textAlign: "center" }}>{error}</p>}
+          <button type="submit" className="btn-primary">Unlock</button>
+        </form>
       </div>
     );
   }
 
-  // Derived Insights
-  const total = submissions.length;
-  const pending = submissions.filter(s => !s.status || s.status === 'Pending').length;
-  const done = submissions.filter(s => s.status === 'Done').length;
-  const docIssue = submissions.filter(s => s.status === 'Documents Issue').length;
-  const notesCount = submissions.filter(s => s.notes && s.notes.trim() !== "").length;
-  const onlineCount = submissions.filter(s => s.status === 'DONE & ONLINE SIR COMPLETE').length;
+  const uniqueAgents = ["All", ...new Set(submissions.map(s => s.submitted_by ? s.submitted_by.toUpperCase().trim() : "UNKNOWN"))];
+  const agentFilteredSubmissions = agentFilter === "All" ? submissions : submissions.filter(s => {
+    const sAgent = s.submitted_by ? s.submitted_by.toUpperCase().trim() : "UNKNOWN";
+    return sAgent === agentFilter;
+  });
+
+  // Derived Insights (Based on Agent Filter)
+  const total = agentFilteredSubmissions.length;
+  const pending = agentFilteredSubmissions.filter(s => !s.status || s.status === 'Pending').length;
+  const done = agentFilteredSubmissions.filter(s => s.status === 'Done').length;
+  const docIssue = agentFilteredSubmissions.filter(s => s.status === 'Documents Issue').length;
+  const notesCount = agentFilteredSubmissions.filter(s => s.notes && s.notes.trim() !== "").length;
+  const onlineCount = agentFilteredSubmissions.filter(s => s.status === 'DONE & ONLINE SIR COMPLETE').length;
 
   // Filtered Data (Searches across all fields AND matches active chip)
-  const filteredData = submissions.filter(s => {
+  const filteredData = agentFilteredSubmissions.filter(s => {
     // 1. Check chip filter
     if (statusFilter === "Notes") {
       if (!s.notes || s.notes.trim() === "") return false;
@@ -340,6 +366,7 @@ export default function AdminDashboard() {
       (s.mobile?.toLowerCase() || "").includes(query) ||
       (s.house_no?.toLowerCase() || "").includes(query) ||
       (s.status?.toLowerCase() || "").includes(query) ||
+      (s.submitted_by?.toLowerCase() || "").includes(query) ||
       (new Date(s.created_at).toLocaleString().toLowerCase().includes(query))
     );
   });
@@ -348,17 +375,8 @@ export default function AdminDashboard() {
     <div className="admin-container">
       <div className="admin-header">
         <div>
-          <h1 className="title" style={{ textAlign: "left", marginBottom: 0 }}>Team Workspace</h1>
-          <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Manage voter submissions</p>
-          <div style={{ marginTop: "8px", fontSize: "13px", color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "12px" }}>
-            <span>👤 Logged in as: <strong>{agent.name}</strong></span>
-            <button 
-              onClick={() => { localStorage.removeItem("agent_auth"); setAgent(null); }}
-              style={{ background: "none", border: "none", color: "var(--accent-color)", cursor: "pointer", textDecoration: "underline", padding: 0 }}
-            >
-              Switch ID
-            </button>
-          </div>
+          <h1 className="title" style={{ textAlign: "left", marginBottom: 0 }}>Super Admin Dashboard</h1>
+          <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Oversee all agent submissions</p>
         </div>
         <div className="admin-actions">
           <button onClick={() => setAddModal(true)} className="btn-primary" style={{ flexShrink: 0, margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "var(--accent-color)", whiteSpace: "nowrap" }}>
@@ -376,6 +394,27 @@ export default function AdminDashboard() {
             </button>
           </a>
         </div>
+      </div>
+
+      <div style={{ marginBottom: "16px", overflowX: "auto", display: "flex", gap: "8px", paddingBottom: "8px" }}>
+        {uniqueAgents.map(agent => (
+          <button 
+            key={agent} 
+            onClick={() => setAgentFilter(agent)} 
+            style={{ 
+              padding: "6px 12px", 
+              borderRadius: "20px", 
+              fontSize: "12px", 
+              border: "1px solid var(--border-color)", 
+              background: agentFilter === agent ? "var(--accent-color)" : "transparent",
+              color: agentFilter === agent ? "white" : "var(--text-primary)",
+              cursor: "pointer",
+              whiteSpace: "nowrap"
+            }}
+          >
+            {agent === "All" ? "All Team Members" : `👤 ${agent}`}
+          </button>
+        ))}
       </div>
 
       <div className="insights-grid" style={{ overflowX: "auto", display: "flex", flexWrap: "nowrap", paddingBottom: "10px" }}>
@@ -434,6 +473,11 @@ export default function AdminDashboard() {
                 <div className="data-field">
                   <span className="data-label">Name</span>
                   <span className="data-value" style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.3px", overflowWrap: "break-word" }}>{sub.name}</span>
+                  {sub.submitted_by && (
+                    <span style={{ fontSize: "10px", padding: "2px 6px", background: "var(--border-color)", borderRadius: "4px", color: "var(--text-secondary)", marginTop: "4px", display: "inline-block" }}>
+                      👤 {sub.submitted_by}
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: "flex", gap: "8px" }}>
                   <button 
@@ -634,6 +678,10 @@ export default function AdminDashboard() {
                 </select>
               </div>
               <div className="form-group">
+                <label className="form-label">Submitted By / Agent ID</label>
+                <input type="text" className="form-input" placeholder="e.g. ZAKER" value={editModal.submitted_by || ""} onChange={e => setEditModal({...editModal, submitted_by: e.target.value})} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">Admin Note (Optional)</label>
                 <textarea 
                   className="form-input" 
@@ -686,6 +734,10 @@ export default function AdminDashboard() {
                   <option value="Documents Issue">Documents Issue</option>
                   <option value="DONE & ONLINE SIR COMPLETE">DONE & ONLINE SIR COMPLETE</option>
                 </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Submitted By / Agent ID</label>
+                <input type="text" name="submitted_by" className="form-input" placeholder="e.g. ZAKER" />
               </div>
               <div className="form-group">
                 <label className="form-label">Admin Note (Optional)</label>

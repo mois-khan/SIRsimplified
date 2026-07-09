@@ -1,5 +1,16 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+
+// Configure Cloudflare R2 Client
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+  },
+});
 
 export async function POST(request) {
   try {
@@ -12,6 +23,7 @@ export async function POST(request) {
     const photo = formData.get("photo");
     const status = formData.get("status") || "Pending";
     const notes = formData.get("notes") || null;
+    const submitted_by = formData.get("submitted_by") || null;
 
     if (!name || !mobile || !epic_no) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -23,22 +35,25 @@ export async function POST(request) {
     if (photo && photo.size > 0) {
       const fileExt = photo.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `public/${fileName}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("voter_ids")
-        .upload(filePath, photo);
+      try {
+        const arrayBuffer = await photo.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
 
-      if (uploadError) {
-        console.error("Upload error (skipping photo):", uploadError);
+        await r2.send(new PutObjectCommand({
+          Bucket: "voter-ids",
+          Key: fileName,
+          Body: buffer,
+          ContentType: photo.type,
+        }));
+
+        // Construct public URL
+        const publicDomain = process.env.R2_PUBLIC_URL?.replace(/\/$/, ""); // Remove trailing slash if exists
+        id_photo_url = `${publicDomain}/${fileName}`;
+        
+      } catch (uploadError) {
+        console.error("R2 Upload error (skipping photo):", uploadError);
         // We do not fail the whole request if photo upload fails.
-      } else {
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("voter_ids")
-          .getPublicUrl(filePath);
-          
-        id_photo_url = publicUrlData.publicUrl;
       }
     }
 
@@ -55,6 +70,7 @@ export async function POST(request) {
           id_photo_url,
           status,
           notes,
+          submitted_by,
         }
       ])
       .select();

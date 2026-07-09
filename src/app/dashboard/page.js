@@ -23,8 +23,8 @@ export default function Dashboard() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (passcode === "501401") {
-      localStorage.setItem("adminAuth", "501401");
+    if (passcode === "1001") {
+      localStorage.setItem("superAuth", "1001");
       setIsAuthenticated(true);
       fetchData();
     } else {
@@ -47,7 +47,7 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (localStorage.getItem("adminAuth") === "501401") {
+    if (localStorage.getItem("superAuth") === "1001") {
       setIsAuthenticated(true);
       fetchData();
     }
@@ -89,6 +89,17 @@ export default function Dashboard() {
     ].filter(item => item.value > 0);
   };
 
+  const getAgentData = () => {
+    const counts = {};
+    submissions.forEach(sub => {
+      const agent = sub.submitted_by ? sub.submitted_by.toUpperCase().trim() : "UNKNOWN";
+      counts[agent] = (counts[agent] || 0) + 1;
+    });
+    return Object.keys(counts)
+      .map(agent => ({ agent, forms: counts[agent] }))
+      .sort((a, b) => b.forms - a.forms); // Sort descending
+  };
+
   const shareReport = async () => {
     const today = new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' });
     const todayCount = submissions.filter(s => new Date(s.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', month: 'short', day: 'numeric' }) === today).length;
@@ -121,8 +132,8 @@ export default function Dashboard() {
   if (!isAuthenticated) {
     return (
       <div className="card" style={{ maxWidth: "400px", margin: "40px auto" }}>
-        <h1 className="title">Dashboard Access</h1>
-        <p className="subtitle">Enter the 6-digit admin passcode</p>
+        <h1 className="title">Super Dashboard Access</h1>
+        <p className="subtitle">Enter the 4-digit super passcode</p>
         <form onSubmit={handleLogin}>
           <div className="form-group">
             <input
@@ -132,7 +143,7 @@ export default function Dashboard() {
               onChange={(e) => setPasscode(e.target.value)}
               placeholder="Enter passcode"
               style={{ textAlign: "center", letterSpacing: "4px", fontSize: "20px" }}
-              maxLength={6}
+              maxLength={4}
             />
           </div>
           {error && <p style={{ color: "#ef4444", fontSize: "14px", textAlign: "center", marginBottom: "16px" }}>{error}</p>}
@@ -144,6 +155,7 @@ export default function Dashboard() {
 
   const dayWiseData = getDayWiseData();
   const statusData = getStatusData();
+  const agentData = getAgentData();
 
   return (
     <div className="admin-container" style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
@@ -237,6 +249,21 @@ export default function Dashboard() {
                   <RechartsTooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "20px" }} />
                 </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Agent Leaderboard Chart */}
+          <div className="card" style={{ padding: "24px", gridColumn: "1 / -1" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>Team Leaderboard (Forms Collected)</h3>
+            <div style={{ height: "300px", width: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={agentData} layout="vertical" margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
+                  <XAxis type="number" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis dataKey="agent" type="category" width={100} tick={{ fontSize: 12, fill: "var(--text-secondary)", fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <RechartsTooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }} />
+                  <Bar dataKey="forms" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={24} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>

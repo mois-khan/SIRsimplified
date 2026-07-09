@@ -1,7 +1,7 @@
-"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import AgentLogin from "../../components/AgentLogin";
 
-const compressImage = async (file, maxWidth = 1000) => {
+const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -30,7 +30,7 @@ const compressImage = async (file, maxWidth = 1000) => {
             lastModified: Date.now(),
           });
           resolve(compressedFile);
-        }, 'image/jpeg', 0.8);
+        }, 'image/jpeg', 0.75);
       };
       img.onerror = error => reject(error);
     };
@@ -42,6 +42,18 @@ export default function Home() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [photoName, setPhotoName] = useState("");
+  const [agent, setAgent] = useState(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  useEffect(() => {
+    const cached = localStorage.getItem("agent_auth");
+    if (cached) {
+      try {
+        setAgent(JSON.parse(cached));
+      } catch (e) {}
+    }
+    setIsCheckingAuth(false);
+  }, []);
 
   const whatsappLink = process.env.NEXT_PUBLIC_WHATSAPP_LINK || "#";
 
@@ -117,6 +129,16 @@ export default function Home() {
     );
   }
 
+  if (isCheckingAuth) return <div style={{ padding: "40px", textAlign: "center" }}>Loading...</div>;
+
+  if (!agent) {
+    return (
+      <div className="container">
+        <AgentLogin onLoginSuccess={(ag) => setAgent(ag)} />
+      </div>
+    );
+  }
+
   return (
     <div className="card" style={{ maxWidth: "600px", margin: "0 auto" }}>
       <h1 className="title">Voter Assistance Portal</h1>
@@ -125,6 +147,7 @@ export default function Home() {
       </p>
 
       <form onSubmit={handleSubmit}>
+        <input type="hidden" name="submitted_by" value={agent.name} />
         <div className="form-group" style={{ marginBottom: "24px" }}>
           <label className="form-label">Enumeration Form Status</label>
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
@@ -236,6 +259,19 @@ export default function Home() {
           {isSubmitting ? "Submitting..." : "Submit & Join Group"}
         </button>
       </form>
+      
+      <div style={{ textAlign: "center", marginTop: "32px", borderTop: "1px solid var(--border-color)", paddingTop: "16px" }}>
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>👤 Logged in as: {agent.name}</p>
+        <button 
+          onClick={() => {
+            localStorage.removeItem("agent_auth");
+            setAgent(null);
+          }}
+          style={{ background: "none", border: "none", color: "var(--accent-color)", textDecoration: "underline", fontSize: "12px", cursor: "pointer" }}
+        >
+          Not {agent.name}? Switch Agent
+        </button>
+      </div>
     </div>
   );
 }
