@@ -5,7 +5,12 @@
       "Bash(npx eslint *)",
       "Bash(node -e ' *)",
       "Bash(timeout 300 npx next build)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(awk -F= '/^[A-Za-z]/ {key=$1; val=$2; if \\(val==\"\" \\) {print key\": \\(EMPTY\\)\"} else {n=length\\(val\\); masked=substr\\(val,1,4\\) \"…\\(\" n \" chars\\)\"; print key\": \"masked}}' .env.local)",
+      "Bash(node \"C:/Users/MOIS KHAN/AppData/Local/Temp/claude/d--Projects-SIRsimplified/1eb43900-84a3-428b-beda-f3c93d8ff49c/scratchpad/r2diag.js\")",
+      "Bash(node _r2diag_tmp.js)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(rm -f _r2diag_tmp.js)"
     ]
   }
 }
