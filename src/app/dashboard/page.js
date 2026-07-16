@@ -131,24 +131,58 @@ export default function Dashboard() {
 
   if (!isAuthenticated) {
     return (
-      <div className="card" style={{ maxWidth: "400px", margin: "40px auto" }}>
-        <h1 className="title">Super Dashboard Access</h1>
-        <p className="subtitle">Enter the 4-digit super passcode</p>
+      <div className="card" style={{ maxWidth: "420px", margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: "24px" }}>
+          <div style={{ fontSize: "48px", marginBottom: "12px" }}>🔐</div>
+          <h1 className="title" style={{ marginBottom: "4px" }}>Analytics Dashboard</h1>
+          <p className="subtitle">Secure Access Required</p>
+        </div>
+
         <form onSubmit={handleLogin}>
           <div className="form-group">
+            <label className="form-label required">Access Passcode</label>
             <input
               type="password"
               className="form-input"
               value={passcode}
               onChange={(e) => setPasscode(e.target.value)}
-              placeholder="Enter passcode"
-              style={{ textAlign: "center", letterSpacing: "4px", fontSize: "20px" }}
+              placeholder="Enter 4-digit passcode"
+              style={{ textAlign: "center", letterSpacing: "6px", fontSize: "20px", fontWeight: "600" }}
               maxLength={4}
+              pattern="\d{4}"
+              required
+              aria-label="Dashboard passcode"
             />
           </div>
-          {error && <p style={{ color: "#ef4444", fontSize: "14px", textAlign: "center", marginBottom: "16px" }}>{error}</p>}
-          <button type="submit" className="btn-primary">Access Analytics</button>
+
+          {error && (
+            <div style={{
+              background: "var(--error-light)",
+              color: "var(--error-color)",
+              padding: "12px 14px",
+              borderRadius: "8px",
+              fontSize: "13px",
+              textAlign: "center",
+              fontWeight: "500",
+              marginBottom: "20px",
+              border: "1px solid var(--error-color)"
+            }}>
+              ❌ {error}
+            </div>
+          )}
+
+          <button 
+            type="submit" 
+            className="btn-primary"
+            disabled={passcode.length !== 4}
+          >
+            🔓 Unlock Dashboard
+          </button>
         </form>
+
+        <p style={{ fontSize: "12px", color: "var(--text-secondary)", textAlign: "center", marginTop: "16px", fontStyle: "italic" }}>
+          This dashboard is for authorized personnel only.
+        </p>
       </div>
     );
   }
@@ -158,78 +192,174 @@ export default function Dashboard() {
   const agentData = getAgentData();
 
   return (
-    <div className="admin-container" style={{ maxWidth: "1000px", margin: "0 auto", padding: "20px" }}>
-      <div className="admin-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "16px", marginBottom: "32px" }}>
+    <div style={{ maxWidth: "1200px", margin: "0 auto", padding: "20px" }}>
+      {/* Header Section */}
+      <div style={{ 
+        display: "flex", 
+        justifyContent: "space-between", 
+        alignItems: "flex-start", 
+        flexWrap: "wrap", 
+        gap: "20px", 
+        marginBottom: "32px",
+        paddingBottom: "20px",
+        borderBottom: "2px solid var(--border-color)"
+      }}>
         <div>
-          <h1 className="title" style={{ textAlign: "left", marginBottom: 0 }}>Analytics Dashboard</h1>
-          <p className="subtitle" style={{ textAlign: "left", marginBottom: 0 }}>Live enumeration insights</p>
+          <h1 className="title" style={{ marginBottom: "4px" }}>📊 Analytics Dashboard</h1>
+          <p className="subtitle" style={{ marginBottom: 0 }}>Live voter assistance form tracking & insights</p>
         </div>
-        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-          <button onClick={shareReport} className="btn-primary btn-success" style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "14px", borderRadius: "8px", display: "flex", alignItems: "center", gap: "6px" }}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-            Share Daily Report
+        
+        <div style={{ display: "flex", gap: "12px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <button 
+            onClick={shareReport} 
+            className="btn-primary btn-success"
+            style={{ 
+              margin: 0, 
+              padding: "10px 18px", 
+              width: "auto", 
+              fontSize: "13px", 
+              display: "flex", 
+              alignItems: "center", 
+              gap: "8px",
+              fontWeight: "600"
+            }}
+            title="Share today's report via WhatsApp or clipboard"
+          >
+            <span style={{ fontSize: "16px" }}>📱</span>
+            Share Report
           </button>
-          <a href="/admin">
-            <button className="btn-primary" style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "14px", borderRadius: "8px", background: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "6px" }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-              Back to Admin
+          <a href="/admin" style={{ textDecoration: "none" }}>
+            <button 
+              className="btn-primary"
+              style={{ 
+                margin: 0, 
+                padding: "10px 18px", 
+                width: "auto", 
+                fontSize: "13px", 
+                background: "var(--bg-secondary)", 
+                color: "var(--text-primary)",
+                border: "1px solid var(--border-color)",
+                display: "flex", 
+                alignItems: "center", 
+                gap: "8px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--border-color)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--bg-secondary)";
+              }}
+              title="Return to admin panel"
+            >
+              <span style={{ fontSize: "16px" }}>⬅️</span>
+              Back
             </button>
           </a>
         </div>
       </div>
 
+      {/* Loading State */}
       {loading ? (
-        <div style={{ textAlign: "center", padding: "60px" }}>
-          <div style={{ display: "inline-block", width: "32px", height: "32px", border: "4px solid var(--border-color)", borderTopColor: "var(--accent-color)", borderRadius: "50%", animation: "spin 1s linear infinite" }}></div>
-          <p style={{ color: "var(--text-secondary)", marginTop: "16px" }}>Crunching numbers...</p>
+        <div style={{ textAlign: "center", padding: "60px 20px" }}>
+          <div className="spinner" style={{ display: "inline-block", marginBottom: "12px" }}></div>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Loading analytics...</p>
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "24px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))", gap: "20px" }}>
           
           {/* KPI Cards */}
-          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid var(--accent-color)" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Total Forms</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>{submissions.length}</h2>
+          <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "16px", marginBottom: "8px" }}>
+            <div className="card" style={{ 
+              padding: "24px", 
+              textAlign: "center", 
+              borderLeft: "4px solid var(--accent-color)",
+              transition: "all 0.2s ease"
+            }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.3px" }}>
+                📋 Total Forms
+              </p>
+              <h2 style={{ fontSize: "36px", fontWeight: "800", color: "var(--accent-color)", margin: 0 }}>
+                {submissions.length}
+              </h2>
             </div>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #10b981" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Completed (Done)</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+
+            <div className="card" style={{ 
+              padding: "24px", 
+              textAlign: "center", 
+              borderLeft: "4px solid var(--success-color)",
+              transition: "all 0.2s ease"
+            }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.3px" }}>
+                ✅ Completed
+              </p>
+              <h2 style={{ fontSize: "36px", fontWeight: "800", color: "var(--success-color)", margin: 0 }}>
                 {statusData.find(s => s.name === 'Done')?.value || 0}
               </h2>
             </div>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #3b82f6" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Online SIR Complete</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+
+            <div className="card" style={{ 
+              padding: "24px", 
+              textAlign: "center", 
+              borderLeft: "4px solid #3b82f6",
+              transition: "all 0.2s ease"
+            }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.3px" }}>
+                🌐 Online SIR
+              </p>
+              <h2 style={{ fontSize: "36px", fontWeight: "800", color: "#3b82f6", margin: 0 }}>
                 {statusData.find(s => s.name === 'Online SIR')?.value || 0}
               </h2>
             </div>
-            <div className="card" style={{ padding: "20px", textAlign: "center", borderLeft: "4px solid #ef4444" }}>
-              <p style={{ color: "var(--text-secondary)", fontSize: "13px", fontWeight: "600", textTransform: "uppercase", marginBottom: "8px" }}>Document Issues</p>
-              <h2 style={{ fontSize: "32px", fontWeight: "800", color: "var(--text-primary)", margin: 0 }}>
+
+            <div className="card" style={{ 
+              padding: "24px", 
+              textAlign: "center", 
+              borderLeft: "4px solid var(--error-color)",
+              transition: "all 0.2s ease"
+            }}>
+              <p style={{ color: "var(--text-secondary)", fontSize: "12px", fontWeight: "700", textTransform: "uppercase", marginBottom: "8px", letterSpacing: "0.3px" }}>
+                ⚠️ Doc Issues
+              </p>
+              <h2 style={{ fontSize: "36px", fontWeight: "800", color: "var(--error-color)", margin: 0 }}>
                 {statusData.find(s => s.name === 'Doc Issue')?.value || 0}
               </h2>
             </div>
           </div>
 
           {/* Day Wise Bar Chart */}
-          <div className="card" style={{ padding: "24px" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>Forms Collected (Last 7 Days)</h3>
+          <div className="card" style={{ padding: "24px", gridColumn: "1 / -1" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px", color: "var(--text-primary)", letterSpacing: "0.3px" }}>
+              📈 Forms Collected (Last 7 Days)
+            </h3>
             <div style={{ height: "300px", width: "100%" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dayWiseData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <XAxis dataKey="date" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <RechartsTooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }} />
-                  <Bar dataKey="count" fill="var(--accent-color)" radius={[4, 4, 0, 0]} />
+                  <RechartsTooltip 
+                    cursor={{ fill: "rgba(0,0,0,0.05)" }} 
+                    contentStyle={{ 
+                      borderRadius: "8px", 
+                      border: "none", 
+                      boxShadow: "var(--shadow-lg)",
+                      background: "var(--bg-secondary)",
+                      color: "var(--text-primary)"
+                    }} 
+                  />
+                  <Bar dataKey="count" fill="var(--accent-color)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
           {/* Status Pie Chart */}
-          <div className="card" style={{ padding: "24px", display: "flex", flexDirection: "column" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>Status Breakdown</h3>
+          <div className="card" style={{ padding: "24px", gridColumn: "1 / -1" }}>
+            <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px", color: "var(--text-primary)", letterSpacing: "0.3px" }}>
+              🎯 Status Breakdown
+            </h3>
             <div style={{ height: "300px", width: "100%", display: "flex", justifyContent: "center", alignItems: "center" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -246,8 +376,14 @@ export default function Dashboard() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <RechartsTooltip contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }} />
-                  <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "20px" }} />
+                  <RechartsTooltip contentStyle={{ 
+                    borderRadius: "8px", 
+                    border: "none", 
+                    boxShadow: "var(--shadow-lg)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)"
+                  }} />
+                  <Legend iconType="circle" wrapperStyle={{ fontSize: "12px", paddingTop: "20px", color: "var(--text-secondary)" }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -255,14 +391,22 @@ export default function Dashboard() {
 
           {/* Agent Leaderboard Chart */}
           <div className="card" style={{ padding: "24px", gridColumn: "1 / -1" }}>
-            <h3 style={{ fontSize: "16px", fontWeight: "600", marginBottom: "20px", color: "var(--text-primary)" }}>Team Leaderboard (Forms Collected)</h3>
+            <h3 style={{ fontSize: "16px", fontWeight: "700", marginBottom: "20px", color: "var(--text-primary)", letterSpacing: "0.3px" }}>
+              🏆 Team Leaderboard (Forms Collected)
+            </h3>
             <div style={{ height: "300px", width: "100%" }}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={agentData} layout="vertical" margin={{ top: 10, right: 30, left: 20, bottom: 0 }}>
                   <XAxis type="number" tick={{ fontSize: 12, fill: "var(--text-secondary)" }} axisLine={false} tickLine={false} allowDecimals={false} />
                   <YAxis dataKey="agent" type="category" width={100} tick={{ fontSize: 12, fill: "var(--text-secondary)", fontWeight: 600 }} axisLine={false} tickLine={false} />
-                  <RechartsTooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 10px 25px rgba(0,0,0,0.1)" }} />
-                  <Bar dataKey="forms" fill="#4f46e5" radius={[0, 4, 4, 0]} barSize={24} />
+                  <RechartsTooltip cursor={{ fill: "rgba(0,0,0,0.05)" }} contentStyle={{ 
+                    borderRadius: "8px", 
+                    border: "none", 
+                    boxShadow: "var(--shadow-lg)",
+                    background: "var(--bg-secondary)",
+                    color: "var(--text-primary)"
+                  }} />
+                  <Bar dataKey="forms" fill="var(--accent-color)" radius={[0, 6, 6, 0]} barSize={24} />
                 </BarChart>
               </ResponsiveContainer>
             </div>

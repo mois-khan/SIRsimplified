@@ -1,3 +1,4 @@
+"use client";
 import { useState, useEffect } from "react";
 import AgentLogin from "../../components/AgentLogin";
 
@@ -44,6 +45,7 @@ export default function Home() {
   const [photoName, setPhotoName] = useState("");
   const [agent, setAgent] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [formErrors, setFormErrors] = useState({});
 
   useEffect(() => {
     const cached = localStorage.getItem("agent_auth");
@@ -60,8 +62,29 @@ export default function Home() {
   async function handleSubmit(e) {
     e.preventDefault();
     setIsSubmitting(true);
+    setFormErrors({});
 
     const formData = new FormData(e.target);
+    
+    // Validate form data
+    const name = formData.get("name");
+    const mobile = formData.get("mobile");
+    const epicNo = formData.get("epic_no");
+
+    if (!name || name.trim().length === 0) {
+      setFormErrors(prev => ({...prev, name: "Name is required"}));
+    }
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+      setFormErrors(prev => ({...prev, mobile: "Mobile must be 10 digits"}));
+    }
+    if (!epicNo || epicNo.trim().length === 0) {
+      setFormErrors(prev => ({...prev, epic_no: "Voter ID/EPIC is required"}));
+    }
+
+    if (!name || !mobile || !epicNo) {
+      setIsSubmitting(false);
+      return;
+    }
     
     const photoFile = formData.get("photo");
     if (photoFile && photoFile.size > 0 && photoFile.type.startsWith("image/")) {
@@ -83,10 +106,10 @@ export default function Home() {
         setIsSuccess(true);
       } else {
         const data = await res.json();
-        alert(data.error || "Something went wrong. Please try again.");
+        setFormErrors({submit: data.error || "Something went wrong. Please try again."});
       }
     } catch (err) {
-      alert("Failed to connect. Please check your connection.");
+      setFormErrors({submit: "Failed to connect. Please check your connection."});
     } finally {
       setIsSubmitting(false);
     }
@@ -95,16 +118,18 @@ export default function Home() {
   const resetForm = () => {
     setIsSuccess(false);
     setPhotoName("");
+    setFormErrors({});
   };
 
   if (isSuccess) {
     return (
-      <div className="card" style={{ textAlign: "center" }}>
+      <div className="card" style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
+        <div style={{ fontSize: "40px", marginBottom: "16px" }}>✓</div>
         <h1 className="title" style={{ color: "var(--success-color)", marginBottom: "16px" }}>
           Success!
         </h1>
         <p className="subtitle" style={{ marginBottom: "32px", color: "var(--text-primary)" }}>
-          Your details have been securely submitted. Please join our WhatsApp group for important updates and assistance.
+          Your details have been securely submitted. Thank you for using the Voter Assistance Portal.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <a 
@@ -114,13 +139,12 @@ export default function Home() {
             style={{ textDecoration: "none" }}
           >
             <button className="btn-primary btn-success">
-              Join WhatsApp Group
+              📱 Join WhatsApp Group
             </button>
           </a>
           <button 
             onClick={resetForm}
-            className="btn-primary"
-            style={{ background: "transparent", color: "var(--accent-color)", border: "1px solid var(--accent-color)" }}
+            className="btn-primary btn-secondary"
           >
             Submit Another Response
           </button>
@@ -129,7 +153,14 @@ export default function Home() {
     );
   }
 
-  if (isCheckingAuth) return <div style={{ padding: "40px", textAlign: "center" }}>Loading...</div>;
+  if (isCheckingAuth) {
+    return (
+      <div style={{ padding: "60px 20px", textAlign: "center" }}>
+        <div className="spinner" style={{display: "inline-block", marginBottom: "16px"}}></div>
+        <p style={{ color: "var(--text-secondary)" }}>Loading...</p>
+      </div>
+    );
+  }
 
   if (!agent) {
     return (
@@ -140,38 +171,67 @@ export default function Home() {
   }
 
   return (
-    <div className="card" style={{ maxWidth: "600px", margin: "0 auto" }}>
+    <div className="card" style={{ maxWidth: "620px", margin: "0 auto" }}>
       <h1 className="title">Voter Assistance Portal</h1>
       <p className="subtitle">
-        Enter your details below to get help with the 2002 electoral roll.
+        Enter your details below to get help with the 2002 electoral roll. Fields marked with * are required.
       </p>
+
+      {formErrors.submit && (
+        <div style={{
+          background: "var(--error-light)",
+          color: "var(--error-color)",
+          padding: "12px 14px",
+          borderRadius: "8px",
+          marginBottom: "20px",
+          fontSize: "14px",
+          border: "1px solid var(--error-color)"
+        }}>
+          {formErrors.submit}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit}>
         <input type="hidden" name="submitted_by" value={agent.name} />
-        <div className="form-group" style={{ marginBottom: "24px" }}>
-          <label className="form-label">Enumeration Form Status</label>
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "8px" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Pending" style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)" }} />
-              Pending (Not yet filled)
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Done" defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--success-color)" }} />
-              Form Fill Up Done
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="Documents Issue" style={{ width: "18px", height: "18px", accentColor: "#ef4444" }} />
-              Documents Issue
-            </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", color: "var(--text-primary)", fontSize: "14px" }}>
-              <input type="radio" name="status" value="DONE & ONLINE SIR COMPLETE" style={{ width: "18px", height: "18px", accentColor: "#10b981" }} />
-              DONE & ONLINE SIR COMPLETE
-            </label>
+        
+        {/* Status Selection */}
+        <div className="form-group" style={{ marginBottom: "28px" }}>
+          <label className="form-label">Enumeration Form Status *</label>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+            {[
+              { value: "Pending", label: "Pending (Not yet filled)" },
+              { value: "Done", label: "Form Fill Up Done", default: true },
+              { value: "Documents Issue", label: "Documents Issue" },
+              { value: "DONE & ONLINE SIR COMPLETE", label: "DONE & ONLINE SIR COMPLETE" }
+            ].map(option => (
+              <label key={option.value} style={{ 
+                display: "flex", 
+                alignItems: "center", 
+                gap: "10px", 
+                cursor: "pointer", 
+                color: "var(--text-primary)", 
+                fontSize: "14px",
+                padding: "8px",
+                borderRadius: "6px",
+                transition: "all 0.2s ease",
+                hover: { background: "var(--bg-secondary)" }
+              }}>
+                <input 
+                  type="radio" 
+                  name="status" 
+                  value={option.value}
+                  defaultChecked={option.default}
+                  style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)", cursor: "pointer" }} 
+                />
+                {option.label}
+              </label>
+            ))}
           </div>
         </div>
 
+        {/* Name Field */}
         <div className="form-group">
-          <label className="form-label">Name *</label>
+          <label className="form-label required">Name</label>
           <input 
             type="text" 
             name="name" 
@@ -179,22 +239,32 @@ export default function Home() {
             required 
             placeholder="e.g. ZAKER"
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+            aria-label="Full Name"
+            aria-invalid={formErrors.name ? "true" : "false"}
           />
+          {formErrors.name && <div className="form-error">{formErrors.name}</div>}
         </div>
 
+        {/* Mobile Number Field */}
         <div className="form-group">
-          <label className="form-label">Mobile Number *</label>
+          <label className="form-label required">Mobile Number</label>
           <input 
             type="tel" 
             name="mobile" 
             className="form-input" 
             required 
             placeholder="10-digit number"
+            pattern="[0-9]{10}"
+            aria-label="Mobile Number"
+            aria-invalid={formErrors.mobile ? "true" : "false"}
           />
+          {formErrors.mobile && <div className="form-error">{formErrors.mobile}</div>}
+          <div className="form-help">Enter 10-digit mobile number</div>
         </div>
 
+        {/* EPIC Number Field */}
         <div className="form-group">
-          <label className="form-label">Voter ID/EPIC Number *</label>
+          <label className="form-label required">Voter ID / EPIC Number</label>
           <input 
             type="text" 
             name="epic_no" 
@@ -202,9 +272,13 @@ export default function Home() {
             required 
             placeholder="e.g. YAV1234567"
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+            aria-label="Voter ID or EPIC Number"
+            aria-invalid={formErrors.epic_no ? "true" : "false"}
           />
+          {formErrors.epic_no && <div className="form-error">{formErrors.epic_no}</div>}
         </div>
 
+        {/* House Number Field */}
         <div className="form-group">
           <label className="form-label">House Number (Optional)</label>
           <input 
@@ -213,9 +287,12 @@ export default function Home() {
             className="form-input" 
             placeholder="e.g. 1-23/A"
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+            aria-label="House Number"
           />
+          <div className="form-help">Helps identify the correct location</div>
         </div>
 
+        {/* Booth Number Field */}
         <div className="form-group">
           <label className="form-label">Booth Number (Optional)</label>
           <input 
@@ -224,50 +301,78 @@ export default function Home() {
             className="form-input" 
             placeholder="e.g. 45"
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+            aria-label="Booth Number"
           />
         </div>
 
+        {/* File Upload */}
         <div className="form-group">
           <label className="form-label">Enumeration Form Upload (Optional)</label>
           <div className="file-upload-wrapper">
-            <div className="file-upload-btn">
-              {photoName ? photoName : "Tap to upload Enumeration form"}
-            </div>
+            <label htmlFor="photo-input" className="file-upload-btn" role="button" tabIndex="0">
+              {photoName ? `✓ ${photoName}` : "📷 Click to upload or drag & drop"}
+            </label>
             <input 
+              id="photo-input"
               type="file" 
               name="photo" 
               accept="image/*"
               onChange={(e) => {
                 if (e.target.files[0]) setPhotoName(e.target.files[0].name);
               }}
+              aria-label="Upload enumeration form image"
             />
           </div>
+          <div className="form-help">Accepted formats: JPG, PNG, WebP. Max 10MB</div>
         </div>
 
-        <div className="form-group" style={{ marginBottom: "24px", padding: "16px", background: "rgba(0,0,0,0.02)", borderRadius: "12px", border: "1px solid var(--border-color)" }}>
-          <label style={{ display: "flex", alignItems: "flex-start", gap: "12px", cursor: "pointer", color: "var(--text-primary)", fontSize: "13px", lineHeight: "1.5" }}>
-            <input type="checkbox" name="consent" required defaultChecked style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)", marginTop: "2px", flexShrink: 0 }} />
-            <span>I agree to share my details (name, mobile, EPIC, photo) with Malla Reddy & volunteers for the purpose of SIR form-filling assistance and future follow-up on my application status.</span>
+        {/* Consent Checkbox */}
+        <div className="form-group" style={{ marginBottom: "28px", padding: "16px", background: "var(--accent-light)", borderRadius: "10px", border: "1px solid var(--border-color)" }}>
+          <label style={{ display: "flex", alignItems: "flex-start", gap: "12px", cursor: "pointer", color: "var(--text-primary)", fontSize: "13px", lineHeight: "1.6" }}>
+            <input 
+              type="checkbox" 
+              name="consent" 
+              required 
+              defaultChecked 
+              style={{ width: "18px", height: "18px", accentColor: "var(--accent-color)", marginTop: "2px", flexShrink: 0, cursor: "pointer" }} 
+              aria-label="Consent to share information"
+            />
+            <span>
+              <strong>I agree</strong> to share my details (name, mobile, EPIC, photo) with the volunteers for the purpose of SIR form-filling assistance and future follow-up on my application status.
+            </span>
           </label>
         </div>
 
+        {/* Submit Button */}
         <button 
           type="submit" 
           className="btn-primary"
           disabled={isSubmitting}
+          aria-busy={isSubmitting}
         >
-          {isSubmitting ? "Submitting..." : "Submit & Join Group"}
+          {isSubmitting ? "⏳ Submitting..." : "✓ Submit & Join Group"}
         </button>
       </form>
       
-      <div style={{ textAlign: "center", marginTop: "32px", borderTop: "1px solid var(--border-color)", paddingTop: "16px" }}>
-        <p style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "8px" }}>👤 Logged in as: {agent.name}</p>
+      {/* Agent Info */}
+      <div style={{ textAlign: "center", marginTop: "32px", paddingTop: "20px", borderTop: "1px solid var(--border-color)" }}>
+        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>👤 Logged in as: <strong>{agent.name}</strong></p>
         <button 
           onClick={() => {
             localStorage.removeItem("agent_auth");
             setAgent(null);
           }}
-          style={{ background: "none", border: "none", color: "var(--accent-color)", textDecoration: "underline", fontSize: "12px", cursor: "pointer" }}
+          style={{ 
+            background: "none", 
+            border: "none", 
+            color: "var(--accent-color)", 
+            textDecoration: "underline", 
+            fontSize: "13px", 
+            cursor: "pointer",
+            transition: "all 0.2s ease"
+          }}
+          onMouseEnter={(e) => e.target.style.opacity = "0.8"}
+          onMouseLeave={(e) => e.target.style.opacity = "1"}
         >
           Not {agent.name}? Switch Agent
         </button>
