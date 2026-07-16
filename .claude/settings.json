@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next *)",
+      "Bash(npx eslint *)",
+      "Bash(node -e ' *)",
+      "Bash(timeout 300 npx next build)",
+      "Bash(npm install *)"
+    ]
+  }
+}

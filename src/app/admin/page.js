@@ -3,6 +3,49 @@ import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import AgentLogin from "../../components/AgentLogin";
 
+// WhatsApp group invite link — set NEXT_PUBLIC_WHATSAPP_LINK in .env.local.
+// Note: renaming the group does NOT change this link; only "Reset link" does.
+const WHATSAPP_GROUP_INVITE =
+  process.env.NEXT_PUBLIC_WHATSAPP_LINK || "https://chat.whatsapp.com/PASTE_YOUR_INVITE_CODE";
+const isInviteConfigured = !WHATSAPP_GROUP_INVITE.includes("PASTE_YOUR_INVITE_CODE");
+
+// Some networks/proxies replace literal emoji bytes with "�". Building emoji
+// from their code points keeps the *source* pure ASCII, so they can't be
+// mangled in transit and are reconstructed correctly at runtime. Using a
+// helper call (not a literal) also stops the minifier folding them back.
+const emoji = (...codes) => String.fromCodePoint(...codes);
+const E = {
+  check: emoji(0x2705),        // ✅
+  pray: emoji(0x1F64F),        // 🙏
+  tick: emoji(0x2714, 0xFE0F), // ✔️
+  mega: emoji(0x1F4E2),        // 📢
+  point: emoji(0x1F447),       // 👇
+  bullet: emoji(0x2022),       // •
+};
+
+// Official-looking, simple, English invite message (common language for a
+// mixed Hindi/Telugu audience). *asterisks* render as bold in WhatsApp.
+const buildInviteMessage = (name) => {
+  const b = E.bullet;
+  const hello = name ? `Hello *${name}* ${E.pray}` : `Hello ${E.pray}`;
+  return [
+    `${E.check} *RR Foundation - Official Message*`,
+    "",
+    hello,
+    `Your form has been *successfully submitted* with the help of *RR Foundation*. ${E.tick}`,
+    "",
+    `${E.mega} Please join our *official WhatsApp group* to receive:`,
+    `${b} Updates on your form & voter list`,
+    `${b} *Free* help and correct guidance`,
+    `${b} Important government notices on time`,
+    "",
+    `${E.point} Tap the link below to join:`,
+    WHATSAPP_GROUP_INVITE,
+    "",
+    `${E.pray} Thank you - *Team RR Foundation*`,
+  ].join("\n");
+};
+
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -57,6 +100,9 @@ export default function AdminDashboard() {
   const [addPhotoName, setAddPhotoName] = useState("");
   const [expandedNotes, setExpandedNotes] = useState(new Set());
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [qrModal, setQrModal] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [invitePrompt, setInvitePrompt] = useState(null); // newly-added record awaiting WA invite
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 300);
@@ -281,6 +327,8 @@ export default function AdminDashboard() {
         setAddModal(false);
         setAddPhotoName("");
         fetchData(); // Refresh the list to get the new record with its ID
+        // Auto-prompt the agent to send this voter the WhatsApp group invite.
+        if (data.data && isInviteConfigured) setInvitePrompt(data.data);
       } else {
         showToast(data.error || "Failed to add record.");
       }
@@ -295,6 +343,44 @@ export default function AdminDashboard() {
     if (status === 'Documents Issue' || status === 'Not Found') return '#ef4444'; // Red
     if (status === 'Followed Up') return '#eab308'; // Yellow
     return 'var(--border-color)'; // Default/Pending
+  };
+
+  // Open WhatsApp to the voter's number with the group invite pre-typed.
+  // WhatsApp forbids silently adding numbers to a group, so the voter still
+  // taps the link once to join — this just makes sending the invite one tap.
+  const inviteToWhatsApp = (sub) => {
+    if (!isInviteConfigured) {
+      showToast("Set your WhatsApp group link (NEXT_PUBLIC_WHATSAPP_LINK) first.");
+      return;
+    }
+    const digits = (sub.mobile || "").replace(/\D/g, "");
+    // Normalise to an India (+91) international number for wa.me.
+    const phone = digits.length === 10 ? `91${digits}` : digits;
+    if (phone.length < 11) {
+      showToast("This record has no valid mobile number.");
+      return;
+    }
+    const msg = buildInviteMessage(sub.name);
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
+
+  // Generate a QR of the group invite link (offline, via the qrcode lib) so
+  // voters can scan and join the group themselves.
+  const openGroupQr = async () => {
+    if (!isInviteConfigured) {
+      showToast("Set your WhatsApp group link (NEXT_PUBLIC_WHATSAPP_LINK) first.");
+      return;
+    }
+    try {
+      const QRCode = (await import("qrcode")).default;
+      // High resolution so it stays crisp when printed as a booth poster.
+      const url = await QRCode.toDataURL(WHATSAPP_GROUP_INVITE, { width: 600, margin: 1, errorCorrectionLevel: "M" });
+      setQrDataUrl(url);
+      setQrModal(true);
+    } catch (err) {
+      console.error("QR generation failed:", err);
+      showToast("Could not generate QR code.");
+    }
   };
 
   if (isCheckingAuth) return <div style={{ padding: "40px", textAlign: "center" }}>Loading...</div>;
@@ -314,6 +400,15 @@ export default function AdminDashboard() {
   const docIssue = submissions.filter(s => s.status === 'Documents Issue').length;
   const notesCount = submissions.filter(s => s.notes && s.notes.trim() !== "").length;
   const onlineCount = submissions.filter(s => s.status === 'DONE & ONLINE SIR COMPLETE').length;
+
+  // Today's stats (IST). Format the live Date directly — never parse a
+  // locale string back into new Date() (that produces "Invalid Date").
+  const nowIST = new Date();
+  const todayLabel = nowIST.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' });
+  const todayKey = nowIST.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const todayCount = submissions.filter(s =>
+    new Date(s.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) === todayKey
+  ).length;
 
   // Filtered Data (Searches across all fields AND matches active chip)
   const filteredData = submissions.filter(s => {
@@ -357,6 +452,10 @@ export default function AdminDashboard() {
           <button onClick={() => setAddModal(true)} className="btn-primary" style={{ flexShrink: 0, margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "var(--accent-color)", whiteSpace: "nowrap" }}>
             + Add Submission
           </button>
+          <button onClick={openGroupQr} className="btn-primary" style={{ flexShrink: 0, margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#25D366", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }} title="Show WhatsApp group QR code">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><line x1="14" y1="14" x2="14" y2="14.01"></line><line x1="21" y1="14" x2="21" y2="21"></line><line x1="14" y1="21" x2="17" y2="21"></line><line x1="17" y1="17" x2="17" y2="17.01"></line><line x1="21" y1="17" x2="21" y2="17.01"></line></svg>
+            Group QR
+          </button>
           <a href="/api/admin/export" download style={{ flexShrink: 0 }}>
             <button className="btn-primary btn-success" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", whiteSpace: "nowrap" }}>
               ↓ Download Excel
@@ -368,6 +467,37 @@ export default function AdminDashboard() {
               Dashboard
             </button>
           </a>
+        </div>
+      </div>
+
+      {/* Today's Snapshot — prominent on mobile */}
+      <div style={{
+        background: "var(--bg-secondary)",
+        border: "2px solid var(--accent-color)",
+        borderRadius: "12px",
+        padding: "14px 18px",
+        marginBottom: "20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px",
+        flexWrap: "wrap"
+      }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "2px", minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px", color: "var(--text-secondary)" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            Today
+          </div>
+          <div style={{ fontSize: "16px", fontWeight: 700, color: "var(--accent-color)" }}>{todayLabel}</div>
+        </div>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "6px", whiteSpace: "nowrap" }}>
+          <span style={{ fontSize: "28px", fontWeight: 800, color: "var(--success-color)", lineHeight: 1 }}>{todayCount}</span>
+          <span style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)" }}>forms today</span>
         </div>
       </div>
 
@@ -447,7 +577,15 @@ export default function AdminDashboard() {
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                     Copy
                   </button>
-                  <button 
+                  <button
+                    onClick={() => inviteToWhatsApp(sub)}
+                    title="Send WhatsApp group invite to this voter"
+                    style={{ background: "transparent", border: "1px solid #25D366", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "#25D366", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                    Invite
+                  </button>
+                  <button
                     onClick={() => setDeleteRecordModal(sub)}
                     style={{ background: "transparent", border: "1px solid #ef4444", borderRadius: "4px", padding: "4px 8px", cursor: "pointer", color: "#ef4444", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}
                   >
@@ -736,6 +874,82 @@ export default function AdminDashboard() {
             <a href={photoModal} target="_blank" rel="noopener noreferrer" style={{ display: "block", marginTop: "16px", textDecoration: "none" }}>
               <button className="btn-primary">Open in Full Tab</button>
             </a>
+          </div>
+        </div>
+      )}
+
+      {/* Post-add WhatsApp Invite Prompt */}
+      {invitePrompt && (
+        <div className="modal-overlay" onClick={() => setInvitePrompt(null)}>
+          <div className="modal-content" style={{ textAlign: "center" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: "40px", lineHeight: 1, marginBottom: "8px" }}>{E.check}</div>
+            <h2 className="title" style={{ fontSize: "18px" }}>Record Added!</h2>
+            <p className="subtitle">
+              Send <strong>{invitePrompt.name}</strong> the WhatsApp group invite so they can join for updates?
+            </p>
+            <div className="modal-actions">
+              <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setInvitePrompt(null)}>Skip</button>
+              <button
+                className="btn-primary"
+                style={{ background: "#25D366", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+                onClick={() => { inviteToWhatsApp(invitePrompt); setInvitePrompt(null); }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                Send Invite
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* WhatsApp Group QR — poster style (screenshot to print for a booth) */}
+      {qrModal && (
+        <div className="modal-overlay" onClick={() => setQrModal(false)}>
+          <div className="modal-content" style={{ maxWidth: "380px", padding: 0, background: "transparent", boxShadow: "none" }} onClick={e => e.stopPropagation()}>
+            {/* ── Poster (this is the part you screenshot) ── */}
+            <div style={{
+              background: "#ffffff",
+              color: "#0b3d2e",
+              borderRadius: "16px",
+              overflow: "hidden",
+              border: "1px solid #e5e7eb",
+              boxShadow: "0 12px 34px rgba(0,0,0,0.28)",
+              textAlign: "center"
+            }}>
+              {/* Green header band */}
+              <div style={{ background: "#128C7E", color: "#ffffff", padding: "20px 20px 16px" }}>
+                <div style={{ fontSize: "24px", fontWeight: 800, letterSpacing: "0.5px", lineHeight: 1.1 }}>RR FOUNDATION</div>
+                <div style={{ fontSize: "13px", fontWeight: 600, opacity: 0.95, marginTop: "4px" }}>Voter Assistance Help Group</div>
+              </div>
+
+              {/* Body */}
+              <div style={{ padding: "22px 20px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", color: "#128C7E", fontWeight: 800, fontSize: "16px", marginBottom: "16px" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  Scan to Join on WhatsApp
+                </div>
+
+                {qrDataUrl && (
+                  <img src={qrDataUrl} alt="WhatsApp group QR code" style={{ width: "260px", maxWidth: "82%", height: "auto", border: "6px solid #128C7E", borderRadius: "14px", background: "#fff" }} />
+                )}
+
+                <div style={{ marginTop: "16px", fontSize: "14px", color: "#374151", lineHeight: 1.5 }}>
+                  Open your phone <strong>Camera</strong> and point it<br />at this code to join our free group.
+                </div>
+
+                <div style={{ marginTop: "16px", paddingTop: "12px", borderTop: "1px dashed #d1d5db", fontSize: "11px", color: "#6b7280", fontWeight: 700, letterSpacing: "0.3px", textTransform: "uppercase" }}>
+                  {`${E.mega} Official Group  ${E.bullet}  Free Help  ${E.bullet}  Voter List Updates`}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Controls (not part of the screenshot) ── */}
+            <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
+              <a href={WHATSAPP_GROUP_INVITE} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", flex: 1 }}>
+                <button className="btn-primary" style={{ background: "#25D366", border: "none", width: "100%", margin: 0 }}>Open Link</button>
+              </a>
+              <button className="btn-primary" style={{ background: "var(--text-secondary)", flex: 1, margin: 0 }} onClick={() => setQrModal(false)}>Close</button>
+            </div>
           </div>
         </div>
       )}

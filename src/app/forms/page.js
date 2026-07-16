@@ -124,7 +124,21 @@ export default function Home() {
   if (isSuccess) {
     return (
       <div className="card" style={{ maxWidth: "600px", margin: "0 auto", textAlign: "center" }}>
-        <div style={{ fontSize: "40px", marginBottom: "16px" }}>✓</div>
+        <div style={{ 
+          fontSize: "48px", 
+          marginBottom: "16px",
+          display: "inline-flex",
+          width: "80px",
+          height: "80px",
+          background: "var(--success-light)",
+          borderRadius: "50%",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--success-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
         <h1 className="title" style={{ color: "var(--success-color)", marginBottom: "16px" }}>
           Success!
         </h1>
@@ -138,8 +152,11 @@ export default function Home() {
             rel="noopener noreferrer"
             style={{ textDecoration: "none" }}
           >
-            <button className="btn-primary btn-success">
-              📱 Join WhatsApp Group
+            <button className="btn-primary btn-success" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.076 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421-7.403h-.004a9.87 9.87 0 00-4.935 1.22c-1.516.77-2.865 1.93-3.739 3.341-1.744 2.78-1.744 6.54 0 9.319 1.874 2.78 5.355 4.5 9.214 4.5 1.513 0 2.968-.22 4.364-.649 1.396-.43 2.687-1.08 3.817-1.93L22 22v-3.28c.645-1.004 1.144-2.15 1.303-3.427.16-1.277.088-2.604-.213-3.858-.3-1.254-.87-2.418-1.668-3.362-1.743-2.78-5.224-4.5-9.083-4.5zm-5.9 10.75l.006-.022z"/>
+              </svg>
+              Join WhatsApp Group
             </button>
           </a>
           <button 
@@ -310,7 +327,13 @@ export default function Home() {
           <label className="form-label">Enumeration Form Upload (Optional)</label>
           <div className="file-upload-wrapper">
             <label htmlFor="photo-input" className="file-upload-btn" role="button" tabIndex="0">
-              {photoName ? `✓ ${photoName}` : "📷 Click to upload or drag & drop"}
+              {photoName ? `✓ ${photoName}` : <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+                Click to upload or drag & drop
+              </span>}
             </label>
             <input 
               id="photo-input"
@@ -349,14 +372,33 @@ export default function Home() {
           className="btn-primary"
           disabled={isSubmitting}
           aria-busy={isSubmitting}
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
         >
-          {isSubmitting ? "⏳ Submitting..." : "✓ Submit & Join Group"}
+          {isSubmitting ? (
+            <>
+              <span style={{ display: "inline-block", width: "16px", height: "16px", border: "2px solid currentColor", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 0.6s linear infinite" }}></span>
+              Submitting...
+            </>
+          ) : (
+            <>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Submit & Join Group
+            </>
+          )}
         </button>
       </form>
       
       {/* Agent Info */}
       <div style={{ textAlign: "center", marginTop: "32px", paddingTop: "20px", borderTop: "1px solid var(--border-color)" }}>
-        <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>👤 Logged in as: <strong>{agent.name}</strong></p>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontSize: "13px", color: "var(--text-secondary)", marginBottom: "10px" }}>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span>Logged in as: <strong>{agent.name}</strong></span>
+        </div>
         <button 
           onClick={() => {
             localStorage.removeItem("agent_auth");

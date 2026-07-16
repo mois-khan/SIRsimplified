@@ -41,7 +41,13 @@ export default function SearchPage() {
 
   return (
     <div className="card" style={{ maxWidth: "700px", margin: "0 auto" }}>
-      <h1 className="title" style={{ marginBottom: "12px" }}>2002 Electoral Roll Search</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <h1 className="title" style={{ marginBottom: 0 }}>2002 Electoral Roll Search</h1>
+      </div>
       <p className="subtitle" style={{ marginBottom: "32px" }}>
         Search for your entry in the 2002 electoral roll using your <strong>EPIC Number</strong> or <strong>House Number</strong>. Results are for informational purposes only.
       </p>
@@ -95,10 +101,14 @@ export default function SearchPage() {
               type="submit" 
               className="btn-primary" 
               disabled={isSearching || !query.trim()}
-              style={{ flex: "0 1 auto", margin: 0, padding: "12px 24px", width: "auto" }}
+              style={{ flex: "0 1 auto", margin: 0, padding: "12px 24px", width: "auto", display: "flex", alignItems: "center", gap: "8px" }}
               aria-busy={isSearching}
             >
-              {isSearching ? "🔍 Searching..." : "🔍 Search"}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+              </svg>
+              {isSearching ? "Searching..." : "Search"}
             </button>
           </div>
         </div>
@@ -119,7 +129,13 @@ export default function SearchPage() {
           border: "1px solid var(--border-color)",
           marginBottom: "16px"
         }}>
-          <div style={{ fontSize: "32px", marginBottom: "12px" }}>📭</div>
+          <div style={{ fontSize: "32px", marginBottom: "12px", display: "flex", justifyContent: "center" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+              <line x1="8" y1="11" x2="14" y2="11"></line>
+            </svg>
+          </div>
           <p style={{ fontWeight: "500", marginBottom: "8px" }}>
             No records found matching "{query}"
           </p>
@@ -129,9 +145,14 @@ export default function SearchPage() {
           <button
             onClick={clearSearch}
             className="btn-primary"
-            style={{ marginTop: "16px", maxWidth: "200px", margin: "16px auto 0" }}
+            style={{ marginTop: "16px", maxWidth: "200px", margin: "16px auto 0", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            ↻ Clear Search
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36M20.49 15a9 9 0 0 1-14.85 3.36"></path>
+            </svg>
+            Clear Search
           </button>
         </div>
       )}
@@ -152,9 +173,16 @@ export default function SearchPage() {
               color: "var(--text-secondary)", 
               textTransform: "uppercase", 
               fontWeight: "700",
-              letterSpacing: "0.5px"
+              letterSpacing: "0.5px",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              margin: 0
             }}>
-              ✓ Found {results.length} {results.length === 1 ? "Record" : "Records"}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--success-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Found {results.length} {results.length === 1 ? "Record" : "Records"}
             </h3>
             <button
               onClick={clearSearch}
@@ -278,9 +306,19 @@ export default function SearchPage() {
             borderRadius: "8px",
             fontSize: "12px",
             color: "var(--text-secondary)",
-            lineHeight: "1.6"
+            lineHeight: "1.6",
+            display: "flex",
+            gap: "12px"
           }}>
-            <strong style={{ color: "var(--warning-color)" }}>📋 Information Notice:</strong> This data is from the 2002 electoral roll. For current information and to verify your status, please visit the official Election Commission website at <a href="https://voters.eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-color)" }}>voters.eci.gov.in</a>.
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--warning-color)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: "1px" }}>
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3.05h16.94a2 2 0 0 0 1.71-3.05L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+              <strong style={{ color: "var(--warning-color)", display: "block", marginBottom: "4px" }}>Information Notice:</strong> 
+              This data is from the 2002 electoral roll. For current information and to verify your status, please visit the official Election Commission website at <a href="https://voters.eci.gov.in" target="_blank" rel="noopener noreferrer" style={{ color: "var(--accent-color)" }}>voters.eci.gov.in</a>.
+            </div>
           </div>
         </div>
       )}
@@ -290,6 +328,25 @@ export default function SearchPage() {
         <div style={{ textAlign: "center", padding: "40px 24px" }}>
           <div className="spinner" style={{ display: "inline-block", marginBottom: "12px" }}></div>
           <p style={{ color: "var(--text-secondary)" }}>Searching...</p>
+        </div>
+      )}
+
+      {/* Info Notice */}
+      {!hasSearched && !isSearching && results.length === 0 && (
+        <div style={{
+          padding: "20px",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--border-color)",
+          borderRadius: "8px",
+          textAlign: "center"
+        }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "12px" }}>
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.35-4.35"></path>
+            </svg>
+          </div>
+          <p style={{ color: "var(--text-secondary)", fontSize: "14px" }}>Enter your search query above to find electoral roll entries</p>
         </div>
       )}
     </div>
