@@ -24,25 +24,26 @@ const E = {
 };
 
 // Official-looking, simple, English invite message (common language for a
-// mixed Hindi/Telugu audience). *asterisks* render as bold in WhatsApp.
+// mixed Hindi/Telugu audience). No emoji — kept plain ASCII so it always
+// delivers cleanly. *asterisks* render as bold in WhatsApp.
 const buildInviteMessage = (name) => {
-  const b = E.bullet;
-  const hello = name ? `Hello *${name}* ${E.pray}` : `Hello ${E.pray}`;
+  const hello = name ? `Hello *${name}*,` : "Hello,";
   return [
-    `${E.check} *RR Foundation - Official Message*`,
+    "*RR Foundation - Official Message*",
     "",
     hello,
-    `Your form has been *successfully submitted* with the help of *RR Foundation*. ${E.tick}`,
+    "Your form has been *successfully submitted* with the help of *RR Foundation*.",
     "",
-    `${E.mega} Please join our *official WhatsApp group* to receive:`,
-    `${b} Updates on your form & voter list`,
-    `${b} *Free* help and correct guidance`,
-    `${b} Important government notices on time`,
+    "Please join our *official WhatsApp group* to receive:",
+    "- Updates on your form & voter list",
+    "- *Free* help and correct guidance",
+    "- Important government notices on time",
     "",
-    `${E.point} Tap the link below to join:`,
+    "Tap the link below to join:",
     WHATSAPP_GROUP_INVITE,
     "",
-    `${E.pray} Thank you - *Team RR Foundation*`,
+    "Thank you,",
+    "*Team RR Foundation*",
   ].join("\n");
 };
 
