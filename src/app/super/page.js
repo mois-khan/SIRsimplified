@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
+import { BLO_LIST, bloNumberByName, normalizeBlo, bloOptionsFromSubmissions } from "../../lib/blo";
 
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
@@ -45,7 +46,9 @@ export default function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [agentFilter, setAgentFilter] = useState("All");
-  const [activeTab, setActiveTab] = useState("submissions"); // "submissions" or "agents"
+  const [bloFilter, setBloFilter] = useState("All"); // BLO filter for the submissions list
+  const [bloView, setBloView] = useState(""); // selected BLO in the "BLO Wise" tab
+  const [activeTab, setActiveTab] = useState("submissions"); // "submissions" | "agents" | "blo"
   const [agentsList, setAgentsList] = useState([]);
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
@@ -378,6 +381,15 @@ export default function AdminDashboard() {
     return sAgent === agentFilter;
   });
 
+  // BLO options (for filter + view dropdowns) and the currently-viewed BLO's voters.
+  const { names: bloNames, hasUnassigned } = bloOptionsFromSubmissions(submissions);
+  const bloViewVoters = bloView
+    ? submissions
+        .filter(s => bloView === "Unassigned" ? !normalizeBlo(s.blo_name) : normalizeBlo(s.blo_name) === bloView)
+        .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+    : [];
+  const bloViewNumber = bloView && bloView !== "Unassigned" ? bloNumberByName(bloView) : "";
+
   // Derived Insights (Based on Agent Filter)
   const total = agentFilteredSubmissions.length;
   const pending = agentFilteredSubmissions.filter(s => !s.status || s.status === 'Pending').length;
@@ -395,7 +407,17 @@ export default function AdminDashboard() {
       const sStatus = s.status || "Pending";
       if (sStatus !== statusFilter) return false;
     }
-    
+
+    // 1b. Check BLO filter
+    if (bloFilter !== "All") {
+      const sBlo = normalizeBlo(s.blo_name);
+      if (bloFilter === "Unassigned") {
+        if (sBlo) return false;
+      } else if (sBlo !== bloFilter) {
+        return false;
+      }
+    }
+
     // 2. Check search text
     const query = searchQuery.toLowerCase();
     return (
@@ -423,12 +445,19 @@ export default function AdminDashboard() {
           >
             Submissions
           </button>
-          <button 
-            className="btn-primary" 
+          <button
+            className="btn-primary"
             onClick={() => setActiveTab("agents")}
             style={{ margin: 0, padding: "6px 16px", width: "auto", fontSize: "14px", borderRadius: "6px", background: activeTab === "agents" ? "var(--accent-color)" : "transparent", color: activeTab === "agents" ? "white" : "var(--accent-color)", border: "1px solid var(--accent-color)", whiteSpace: "nowrap" }}
           >
             Manage Agents
+          </button>
+          <button
+            className="btn-primary"
+            onClick={() => setActiveTab("blo")}
+            style={{ margin: 0, padding: "6px 16px", width: "auto", fontSize: "14px", borderRadius: "6px", background: activeTab === "blo" ? "var(--accent-color)" : "transparent", color: activeTab === "blo" ? "white" : "var(--accent-color)", border: "1px solid var(--accent-color)", whiteSpace: "nowrap" }}
+          >
+            BLO Wise
           </button>
         </div>
       </div>
@@ -492,6 +521,76 @@ export default function AdminDashboard() {
         </div>
       )}
 
+      {activeTab === "blo" && (
+        <>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "13px", color: "var(--text-secondary)", fontWeight: 600 }}>View BLO:</span>
+              <select value={bloView} onChange={e => setBloView(e.target.value)} className="status-select" style={{ width: "auto", minWidth: "200px" }}>
+                <option value="">— Select a BLO —</option>
+                {bloNames.map(n => <option key={n} value={n}>{n}</option>)}
+                {hasUnassigned && <option value="Unassigned">Unassigned (no BLO)</option>}
+              </select>
+            </div>
+            <a href="/api/admin/export-blo" target="_blank" style={{ flexShrink: 0 }} title="Download the full BLO-wise voter list as Excel">
+              <button className="btn-primary" style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "13px", borderRadius: "6px", background: "#128C7E", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                ↓ Download BLO Excel
+              </button>
+            </a>
+          </div>
+
+          {bloView ? (
+            <div className="card" style={{ padding: 0, overflow: "hidden" }}>
+              <div style={{ background: bloView === "Unassigned" ? "#6b7280" : "#128C7E", color: "white", padding: "16px 20px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                <div>
+                  <div style={{ fontSize: "18px", fontWeight: 800 }}>{bloView === "Unassigned" ? "Unassigned Voters" : bloView}</div>
+                  {bloView !== "Unassigned" && (
+                    bloViewNumber
+                      ? <a href={`tel:${bloViewNumber}`} style={{ color: "white", textDecoration: "none", fontSize: "14px", display: "inline-flex", alignItems: "center", gap: "6px", opacity: 0.95 }}>📞 {bloViewNumber}</a>
+                      : <span style={{ fontSize: "13px", opacity: 0.9 }}>No contact number set in env</span>
+                  )}
+                </div>
+                <div style={{ fontSize: "14px", fontWeight: 700, background: "rgba(255,255,255,0.2)", padding: "4px 12px", borderRadius: "20px", whiteSpace: "nowrap" }}>{bloViewVoters.length} voters</div>
+              </div>
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                  <thead>
+                    <tr style={{ background: "#f8f9fa", borderBottom: "2px solid #eee" }}>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>#</th>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>Voter Name</th>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>Mobile No</th>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>EPIC No</th>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>House No</th>
+                      <th style={{ padding: "12px", fontWeight: 600, color: "var(--text-secondary)", fontSize: "13px" }}>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {bloViewVoters.map((v, i) => (
+                      <tr key={v.id} style={{ borderBottom: "1px solid #eee" }}>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{i + 1}</td>
+                        <td style={{ padding: "12px", fontWeight: 600 }}>{v.name}</td>
+                        <td style={{ padding: "12px" }}><a href={`tel:${v.mobile}`} style={{ color: "var(--accent-color)", textDecoration: "none" }}>{v.mobile}</a></td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{v.epic_no || "—"}</td>
+                        <td style={{ padding: "12px", color: "var(--text-secondary)" }}>{v.house_no || "—"}</td>
+                        <td style={{ padding: "12px" }}>{v.status || "Pending"}</td>
+                      </tr>
+                    ))}
+                    {bloViewVoters.length === 0 && (
+                      <tr><td colSpan="6" style={{ padding: "24px", textAlign: "center", color: "var(--text-secondary)" }}>No voters assigned to this BLO yet.</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: "center", padding: "40px", color: "var(--text-secondary)" }}>
+              Select a BLO above to view their voters (name &amp; mobile), or download the full BLO-wise Excel.
+            </div>
+          )}
+        </>
+      )}
+
       {activeTab === "submissions" && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "12px" }}>
@@ -537,6 +636,16 @@ export default function AdminDashboard() {
             {agent === "All" ? "All Team Members" : `👤 ${agent}`}
           </button>
         ))}
+      </div>
+
+      {/* BLO filter */}
+      <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 600 }}>Filter by BLO:</span>
+        <select value={bloFilter} onChange={e => setBloFilter(e.target.value)} className="status-select" style={{ width: "auto", minWidth: "180px" }}>
+          <option value="All">All BLOs</option>
+          {bloNames.map(n => <option key={n} value={n}>{n}</option>)}
+          {hasUnassigned && <option value="Unassigned">Unassigned (no BLO)</option>}
+        </select>
       </div>
 
       <div className="insights-grid" style={{ overflowX: "auto", display: "flex", flexWrap: "nowrap", paddingBottom: "10px" }}>

@@ -3,7 +3,8 @@
 //
 // Structure:
 //   • "Summary" sheet  — index of every BLO, their contact number, voter count.
-//   • One sheet per BLO — that BLO's voters (sorted by name).
+//   • One sheet per BLO — that BLO's voters, GROUPED under bold date headers
+//                         (the day the form was filled), oldest day first.
 //   • "Unassigned"      — voters with no BLO selected (only if any exist).
 //
 // resolveContact(name) -> phone string is injected by the caller (the API route
@@ -13,6 +14,7 @@ import ExcelJS from "exceljs";
 
 const TEAL = "FF128C7E";
 const TEAL_LIGHT = "FFD1FAE5";
+const BAND = "FFA7DEC9"; // date-header banner
 const DARK = "FF0B3D2E";
 const WHITE = "FFFFFFFF";
 const GREY = "FF9CA3AF";
@@ -43,6 +45,16 @@ const styleCell = (cell, { fill, bold, color, align, indent, text } = {}) => {
   if (bold || color) cell.font = { bold: !!bold, color: color ? { argb: color } : undefined };
   cell.alignment = { vertical: "middle", horizontal: align || "left", ...(indent ? { indent } : {}) };
   if (text) cell.numFmt = "@";
+};
+
+// IST day label + a sortable key, from a created_at value.
+const dayInfo = (createdAt) => {
+  const t = createdAt ? new Date(createdAt) : null;
+  if (!t || isNaN(t)) return { label: "Undated", sortKey: Number.POSITIVE_INFINITY };
+  const label = t.toLocaleDateString("en-IN", {
+    timeZone: "Asia/Kolkata", day: "2-digit", month: "short", year: "numeric",
+  });
+  return { label, sortKey: t.getTime() };
 };
 
 export function buildBloVoterWorkbook(submissions = [], resolveContact = () => "") {
@@ -77,8 +89,9 @@ export function buildBloVoterWorkbook(submissions = [], resolveContact = () => "
   summary.mergeCells(1, 1, 1, 4);
   const sTitle = summary.getCell(1, 1);
   sTitle.value = "RR FOUNDATION — BLO-WISE VOTER LIST";
-  styleCell(sTitle, { fill: TEAL, bold: true, color: WHITE, align: "center" });
+  sTitle.fill = { type: "pattern", pattern: "solid", fgColor: { argb: TEAL } };
   sTitle.font = { bold: true, size: 15, color: { argb: WHITE } };
+  sTitle.alignment = { vertical: "middle", horizontal: "center" };
   summary.getRow(1).height = 30;
 
   summary.mergeCells(2, 1, 2, 4);
@@ -121,9 +134,7 @@ export function buildBloVoterWorkbook(submissions = [], resolveContact = () => "
 
   for (const key of orderedKeys) {
     const isUnassigned = key === UNASSIGNED;
-    const rows = groups.get(key)
-      .slice()
-      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    const all = groups.get(key);
     const contact = isUnassigned ? "" : (resolveContact(key) || "N/A");
     const ws = workbook.addWorksheet(
       sanitizeSheetName(isUnassigned ? "Unassigned" : key, usedNames),
@@ -135,8 +146,8 @@ export function buildBloVoterWorkbook(submissions = [], resolveContact = () => "
     ws.mergeCells(1, 1, 1, 7);
     const title = ws.getCell(1, 1);
     title.value = isUnassigned
-      ? `UNASSIGNED VOTERS (no BLO selected)      Total: ${rows.length}`
-      : `BLO: ${key}       Contact: ${contact}       Total Voters: ${rows.length}`;
+      ? `UNASSIGNED VOTERS (no BLO selected)      Total: ${all.length}`
+      : `BLO: ${key}       Contact: ${contact}       Total Voters: ${all.length}`;
     title.font = { bold: true, size: 13, color: { argb: WHITE } };
     title.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isUnassigned ? GREY : TEAL } };
     title.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
@@ -151,38 +162,63 @@ export function buildBloVoterWorkbook(submissions = [], resolveContact = () => "
     });
     ws.getRow(2).height = 20;
 
-    // Data rows
-    rows.forEach((r, idx) => {
-      const rowNum = idx + 3;
-      const values = [
-        idx + 1,
-        r.name || "",
-        r.mobile || "",
-        r.house_no || "",
-        r.booth_no || "",
-        r.epic_no || "",
-        r.status || "Pending",
-      ];
-      values.forEach((v, i) => {
-        const c = ws.getCell(rowNum, i + 1);
-        c.value = v;
-        styleCell(c, {
-          fill: idx % 2 === 1 ? ZEBRA : undefined,
-          align: i === 0 ? "center" : "left",
-          text: i === 2 || i === 5, // mobile & EPIC as text (keep exact digits)
-        });
-        c.border = BORDER;
-      });
-    });
-
-    if (rows.length === 0) {
+    if (all.length === 0) {
       ws.mergeCells(3, 1, 3, 7);
       const empty = ws.getCell(3, 1);
       empty.value = "No voters in this group.";
       empty.alignment = { horizontal: "center" };
+      continue;
     }
 
-    ws.autoFilter = { from: { row: 2, column: 1 }, to: { row: 2, column: 7 } };
+    // Group this BLO's voters by day (form-filled date), oldest day first.
+    const byDay = new Map();
+    for (const r of all) {
+      const { label, sortKey } = dayInfo(r.created_at);
+      if (!byDay.has(label)) byDay.set(label, { sortKey, rows: [] });
+      byDay.get(label).rows.push(r);
+    }
+    const orderedDays = [...byDay.entries()].sort((a, b) => a[1].sortKey - b[1].sortKey);
+
+    let rowNum = 3;
+    let serial = 0;
+    for (const [label, grp] of orderedDays) {
+      // Bold date-header banner spanning the row.
+      ws.mergeCells(rowNum, 1, rowNum, 7);
+      const banner = ws.getCell(rowNum, 1);
+      banner.value = `${label.toUpperCase()}    —    ${grp.rows.length} voter${grp.rows.length === 1 ? "" : "s"}`;
+      banner.font = { bold: true, size: 11, color: { argb: DARK } };
+      banner.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BAND } };
+      banner.alignment = { vertical: "middle", horizontal: "left", indent: 1 };
+      for (let i = 1; i <= 7; i++) ws.getCell(rowNum, i).border = BORDER;
+      ws.getRow(rowNum).height = 22;
+      rowNum++;
+
+      // That day's voters, sorted by name.
+      const dayRows = grp.rows.slice().sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      for (const r of dayRows) {
+        serial++;
+        const values = [
+          serial,
+          r.name || "",
+          r.mobile || "",
+          r.house_no || "",
+          r.booth_no || "",
+          r.epic_no || "",
+          r.status || "Pending",
+        ];
+        values.forEach((v, i) => {
+          const c = ws.getCell(rowNum, i + 1);
+          c.value = v;
+          styleCell(c, {
+            fill: serial % 2 === 0 ? ZEBRA : undefined,
+            align: i === 0 ? "center" : "left",
+            text: i === 2 || i === 5, // mobile & EPIC as text (keep exact digits)
+          });
+          c.border = BORDER;
+        });
+        rowNum++;
+      }
+    }
   }
 
   return workbook;

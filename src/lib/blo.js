@@ -32,3 +32,22 @@ export const bloNumberByName = (name) => {
   const match = BLO_LIST.find((b) => b.name === target);
   return match ? match.number : "";
 };
+
+// Normalise a stored blo_name to its UPPERCASE key (or "" if none).
+export const normalizeBlo = (name) =>
+  name && name.trim() ? name.trim().toUpperCase() : "";
+
+// Build the list of BLO names to show in filters/dropdowns: the configured
+// BLOs merged with any BLO actually present in the data, sorted A→Z, plus a
+// flag for whether any records are unassigned. Keeps every UI list consistent.
+export const bloOptionsFromSubmissions = (submissions = []) => {
+  const set = new Set(BLO_LIST.map((b) => b.name));
+  let hasUnassigned = false;
+  for (const s of submissions) {
+    const v = normalizeBlo(s.blo_name);
+    if (v) set.add(v);
+    else hasUnassigned = true;
+  }
+  const names = [...set].sort((a, b) => a.localeCompare(b));
+  return { names, hasUnassigned };
+};

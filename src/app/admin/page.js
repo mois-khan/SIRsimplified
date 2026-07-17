@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import AgentLogin from "../../components/AgentLogin";
-import { BLO_LIST, bloNumberByName } from "../../lib/blo";
+import { BLO_LIST, bloNumberByName, normalizeBlo, bloOptionsFromSubmissions } from "../../lib/blo";
 
 // WhatsApp group invite link — set NEXT_PUBLIC_WHATSAPP_LINK in .env.local.
 // Note: renaming the group does NOT change this link; only "Reset link" does.
@@ -100,6 +100,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [bloFilter, setBloFilter] = useState("All");
   const [toast, setToast] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // { id, newStatus }
   const [photoModal, setPhotoModal] = useState(null); // URL of the photo to view
@@ -429,6 +430,9 @@ export default function AdminDashboard() {
     new Date(s.created_at).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }) === todayKey
   ).length;
 
+  // BLO options for the filter dropdown (configured + any present in data).
+  const { names: bloNames, hasUnassigned } = bloOptionsFromSubmissions(submissions);
+
   // Filtered Data (Searches across all fields AND matches active chip)
   const filteredData = submissions.filter(s => {
     // 1. Check chip filter
@@ -438,7 +442,17 @@ export default function AdminDashboard() {
       const sStatus = s.status || "Pending";
       if (sStatus !== statusFilter) return false;
     }
-    
+
+    // 1b. Check BLO filter
+    if (bloFilter !== "All") {
+      const sBlo = normalizeBlo(s.blo_name);
+      if (bloFilter === "Unassigned") {
+        if (sBlo) return false;
+      } else if (sBlo !== bloFilter) {
+        return false;
+      }
+    }
+
     // 2. Check search text
     const query = searchQuery.toLowerCase();
     return (
@@ -549,13 +563,23 @@ export default function AdminDashboard() {
       </div>
 
       <div className="admin-header" style={{ marginTop: "-10px" }}>
-        <input 
-          type="text" 
-          className="form-input search-bar" 
-          placeholder="Search by Name, EPIC, or Mobile..." 
+        <input
+          type="text"
+          className="form-input search-bar"
+          placeholder="Search by Name, EPIC, or Mobile..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
         />
+      </div>
+
+      {/* BLO filter */}
+      <div style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 600 }}>Filter by BLO:</span>
+        <select value={bloFilter} onChange={e => setBloFilter(e.target.value)} className="status-select" style={{ width: "auto", minWidth: "180px" }}>
+          <option value="All">All BLOs</option>
+          {bloNames.map(n => <option key={n} value={n}>{n}</option>)}
+          {hasUnassigned && <option value="Unassigned">Unassigned (no BLO)</option>}
+        </select>
       </div>
 
       {loading ? (
