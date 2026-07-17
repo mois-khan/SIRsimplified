@@ -33,9 +33,9 @@ const buildInviteMessage = (name, bloName, bloNumber) => {
     "*RR Foundation - Official Message*",
     "",
     hello,
-    "Our *RR Foundation* volunteers have *helped you fill* your *SIR Enumeration Form* - free of cost.",
+    "Our *RR Foundation* volunteers have *filled your SIR Enumeration Form* for you - free of cost.",
     "",
-    "Your filled form will now be *submitted to your BLO* (Booth Level Officer) for further processing.",
+    "We have handed the completed form back to you. Please *submit it yourself to your BLO* (Booth Level Officer).",
   ];
   if (bloName || bloNumber) {
     lines.push("", "*Your BLO (Booth Level Officer):*");

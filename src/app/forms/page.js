@@ -144,7 +144,7 @@ export default function Home() {
           Form Filled!
         </h1>
         <p className="subtitle" style={{ marginBottom: "32px", color: "var(--text-primary)" }}>
-          We&apos;ve recorded your <strong>SIR Enumeration Form</strong> details. Your filled form will be submitted to your BLO (Booth Level Officer). Join our WhatsApp group below for updates and free help.
+          We&apos;ve filled your <strong>SIR Enumeration Form</strong> and handed it back to you. Please submit it yourself to your BLO (Booth Level Officer). Join our WhatsApp group below for updates and free help.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <a 
