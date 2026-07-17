@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import AgentLogin from "../../components/AgentLogin";
+import { BLO_LIST } from "../../lib/blo";
 
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
@@ -140,10 +141,10 @@ export default function Home() {
           </svg>
         </div>
         <h1 className="title" style={{ color: "var(--success-color)", marginBottom: "16px" }}>
-          Success!
+          Form Filled!
         </h1>
         <p className="subtitle" style={{ marginBottom: "32px", color: "var(--text-primary)" }}>
-          Your details have been securely submitted. Thank you for using the Voter Assistance Portal.
+          We&apos;ve recorded your <strong>SIR Enumeration Form</strong> details. Your filled form will be submitted to your BLO (Booth Level Officer). Join our WhatsApp group below for updates and free help.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           <a 
@@ -312,14 +313,31 @@ export default function Home() {
         {/* Booth Number Field */}
         <div className="form-group">
           <label className="form-label">Booth Number (Optional)</label>
-          <input 
-            type="text" 
-            name="booth_no" 
-            className="form-input" 
+          <input
+            type="text"
+            name="booth_no"
+            className="form-input"
             placeholder="e.g. 45"
             onInput={(e) => e.target.value = e.target.value.toUpperCase()}
             aria-label="Booth Number"
           />
+        </div>
+
+        {/* BLO (Booth Level Officer) Field */}
+        <div className="form-group">
+          <label className="form-label">BLO — Booth Level Officer (Optional)</label>
+          <select
+            name="blo_name"
+            className="form-input"
+            defaultValue=""
+            aria-label="Booth Level Officer"
+          >
+            <option value="">— Select BLO —</option>
+            {BLO_LIST.map(b => (
+              <option key={b.name} value={b.name}>{b.name}</option>
+            ))}
+          </select>
+          <div className="form-help">Select the BLO assigned to this voter&apos;s booth</div>
         </div>
 
         {/* File Upload */}

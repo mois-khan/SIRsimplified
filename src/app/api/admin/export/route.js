@@ -25,6 +25,7 @@ export async function GET() {
       { header: "Mobile", key: "mobile", width: 15 },
       { header: "EPIC No", key: "epic_no", width: 20 },
       { header: "House No", key: "house_no", width: 15 },
+      { header: "BLO", key: "blo_name", width: 22 },
       { header: "Status", key: "status", width: 15 },
       { header: "Photo URL", key: "id_photo_url", width: 40 },
     ];
@@ -45,6 +46,7 @@ export async function GET() {
         mobile: sub.mobile,
         epic_no: sub.epic_no,
         house_no: sub.house_no || "N/A",
+        blo_name: sub.blo_name || "N/A",
         status: sub.status || "Pending",
         id_photo_url: sub.id_photo_url || "No Photo",
       });

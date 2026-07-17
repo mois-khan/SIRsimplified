@@ -15,11 +15,12 @@ const r2 = new S3Client({
 export async function POST(request) {
   try {
     const formData = await request.formData();
-    const name = formData.get("name");
+    const name = formData.get("name")?.toUpperCase();
     const mobile = formData.get("mobile");
     const epic_no = formData.get("epic_no")?.toUpperCase();
     const house_no = formData.get("house_no")?.toUpperCase() || null;
     const booth_no = formData.get("booth_no")?.toUpperCase() || null;
+    const blo_name = formData.get("blo_name")?.toUpperCase() || null;
     const photo = formData.get("photo");
     const status = formData.get("status") || "Pending";
     const notes = formData.get("notes") || null;
@@ -67,6 +68,7 @@ export async function POST(request) {
           epic_no,
           house_no,
           booth_no,
+          blo_name,
           id_photo_url,
           status,
           notes,

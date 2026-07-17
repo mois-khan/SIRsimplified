@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import AgentLogin from "../../components/AgentLogin";
+import { BLO_LIST, bloNumberByName } from "../../lib/blo";
 
 // WhatsApp group invite link — set NEXT_PUBLIC_WHATSAPP_LINK in .env.local.
 // Note: renaming the group does NOT change this link; only "Reset link" does.
@@ -26,13 +27,22 @@ const E = {
 // Official-looking, simple, English invite message (common language for a
 // mixed Hindi/Telugu audience). No emoji — kept plain ASCII so it always
 // delivers cleanly. *asterisks* render as bold in WhatsApp.
-const buildInviteMessage = (name) => {
+const buildInviteMessage = (name, bloName, bloNumber) => {
   const hello = name ? `Hello *${name}*,` : "Hello,";
-  return [
+  const lines = [
     "*RR Foundation - Official Message*",
     "",
     hello,
-    "Your form has been *successfully submitted* with the help of *RR Foundation*.",
+    "Our *RR Foundation* volunteers have *helped you fill* your *SIR Enumeration Form* - free of cost.",
+    "",
+    "Your filled form will now be *submitted to your BLO* (Booth Level Officer) for further processing.",
+  ];
+  if (bloName || bloNumber) {
+    lines.push("", "*Your BLO (Booth Level Officer):*");
+    if (bloName) lines.push(`- Name: *${bloName}*`);
+    if (bloNumber) lines.push(`- Contact: *${bloNumber}*`);
+  }
+  lines.push(
     "",
     "Please join our *official WhatsApp group* to receive:",
     "- Updates on your form & voter list",
@@ -44,7 +54,8 @@ const buildInviteMessage = (name) => {
     "",
     "Thank you,",
     "*Team RR Foundation*",
-  ].join("\n");
+  );
+  return lines.join("\n");
 };
 
 const compressImage = async (file, maxWidth = 800) => {
@@ -173,19 +184,25 @@ export default function AdminDashboard() {
   }, []);
 
   const confirmStatusChange = (id, newStatus) => {
-    setConfirmModal({ id, newStatus });
+    setConfirmModal({ id, field: "status", label: "Status", newValue: newStatus });
   };
 
-  const executeStatusChange = async () => {
+  const confirmBloChange = (id, newBlo) => {
+    setConfirmModal({ id, field: "blo_name", label: "BLO", newValue: newBlo });
+  };
+
+  const executeConfirmChange = async () => {
     if (!confirmModal) return;
-    const { id, newStatus } = confirmModal;
-    
+    const { id, field, label, newValue } = confirmModal;
+    // Store an unassigned BLO as null rather than an empty string.
+    const value = newValue === "" ? null : newValue;
+
     // Optimistic UI update
-    setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, status: newStatus } : sub));
+    setSubmissions(subs => subs.map(sub => sub.id === id ? { ...sub, [field]: value } : sub));
     setConfirmModal(null);
-    showToast("Status successfully updated");
-    
-    await supabase.from("submissions").update({ status: newStatus }).eq("id", id);
+    showToast(`${label} successfully updated`);
+
+    await supabase.from("submissions").update({ [field]: value }).eq("id", id);
   };
 
   const handleFileUpload = async (e, id) => {
@@ -260,6 +277,7 @@ export default function AdminDashboard() {
           epic_no: editModal.epic_no,
           house_no: editModal.house_no,
           booth_no: editModal.booth_no,
+          blo_name: editModal.blo_name || null,
           status: editModal.status,
           notes: editModal.notes
         })
@@ -361,7 +379,7 @@ export default function AdminDashboard() {
       showToast("This record has no valid mobile number.");
       return;
     }
-    const msg = buildInviteMessage(sub.name);
+    const msg = buildInviteMessage(sub.name, sub.blo_name, bloNumberByName(sub.blo_name));
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -428,6 +446,7 @@ export default function AdminDashboard() {
       (s.epic_no?.toLowerCase() || "").includes(query) ||
       (s.mobile?.toLowerCase() || "").includes(query) ||
       (s.house_no?.toLowerCase() || "").includes(query) ||
+      (s.blo_name?.toLowerCase() || "").includes(query) ||
       (s.status?.toLowerCase() || "").includes(query) ||
       (new Date(s.created_at).toLocaleString().toLowerCase().includes(query))
     );
@@ -619,7 +638,37 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              <div className="data-field" style={{ marginTop: "8px" }}>
+              <div className="data-field" style={{ marginTop: "12px" }}>
+                <span className="data-label">BLO (Booth Level Officer)</span>
+                {sub.blo_name && bloNumberByName(sub.blo_name) ? (
+                  <a
+                    href={`tel:${bloNumberByName(sub.blo_name)}`}
+                    className="data-value"
+                    title={`Call ${sub.blo_name}`}
+                    style={{ color: "var(--accent-color)", textDecoration: "none", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    {sub.blo_name}
+                  </a>
+                ) : sub.blo_name ? (
+                  <span className="data-value" style={{ marginBottom: "6px" }}>{sub.blo_name}</span>
+                ) : null}
+                <select
+                  className="status-select"
+                  value={sub.blo_name || ""}
+                  onChange={(e) => confirmBloChange(sub.id, e.target.value)}
+                >
+                  <option value="">— Select BLO —</option>
+                  {sub.blo_name && !BLO_LIST.some(b => b.name === sub.blo_name) && (
+                    <option value={sub.blo_name}>{sub.blo_name}</option>
+                  )}
+                  {BLO_LIST.map(b => (
+                    <option key={b.name} value={b.name}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="data-field" style={{ marginTop: "12px" }}>
                 <span className="data-label">Status</span>
                 <select 
                   className="status-select" 
@@ -698,15 +747,18 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Confirmation Modal */}
+      {/* Confirmation Modal (status & BLO changes) */}
       {confirmModal && (
         <div className="modal-overlay" onClick={() => setConfirmModal(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h2 className="title" style={{ fontSize: "18px" }}>Confirm Status Change</h2>
-            <p className="subtitle">Are you sure you want to change the status to <strong>{confirmModal.newStatus}</strong>?</p>
+            <h2 className="title" style={{ fontSize: "18px" }}>Confirm {confirmModal.label} Change</h2>
+            <p className="subtitle">
+              Are you sure you want to change the {confirmModal.label.toLowerCase()} to{" "}
+              <strong>{confirmModal.newValue || "— None —"}</strong>?
+            </p>
             <div className="modal-actions">
               <button className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => setConfirmModal(null)}>Cancel</button>
-              <button className="btn-primary" onClick={executeStatusChange}>Yes, Update</button>
+              <button className="btn-primary" onClick={executeConfirmChange}>Yes, Update</button>
             </div>
           </div>
         </div>
@@ -734,7 +786,7 @@ export default function AdminDashboard() {
             <form onSubmit={executeEdit}>
               <div className="form-group">
                 <label className="form-label">Name</label>
-                <input type="text" className="form-input" value={editModal.name} onChange={e => setEditModal({...editModal, name: e.target.value})} required />
+                <input type="text" className="form-input" style={{ textTransform: "uppercase" }} value={editModal.name} onChange={e => setEditModal({...editModal, name: e.target.value.toUpperCase()})} required />
               </div>
               <div className="form-group">
                 <label className="form-label">Mobile</label>
@@ -742,15 +794,31 @@ export default function AdminDashboard() {
               </div>
               <div className="form-group">
                 <label className="form-label">EPIC No</label>
-                <input type="text" className="form-input" value={editModal.epic_no} onChange={e => setEditModal({...editModal, epic_no: e.target.value})} required />
+                <input type="text" className="form-input" style={{ textTransform: "uppercase" }} value={editModal.epic_no} onChange={e => setEditModal({...editModal, epic_no: e.target.value.toUpperCase()})} required />
               </div>
               <div className="form-group">
                 <label className="form-label">House No</label>
-                <input type="text" className="form-input" value={editModal.house_no || ""} onChange={e => setEditModal({...editModal, house_no: e.target.value})} />
+                <input type="text" className="form-input" style={{ textTransform: "uppercase" }} value={editModal.house_no || ""} onChange={e => setEditModal({...editModal, house_no: e.target.value.toUpperCase()})} />
               </div>
               <div className="form-group">
                 <label className="form-label">Booth No</label>
-                <input type="text" className="form-input" value={editModal.booth_no || ""} onChange={e => setEditModal({...editModal, booth_no: e.target.value})} />
+                <input type="text" className="form-input" style={{ textTransform: "uppercase" }} value={editModal.booth_no || ""} onChange={e => setEditModal({...editModal, booth_no: e.target.value.toUpperCase()})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">BLO (Booth Level Officer)</label>
+                <select
+                  className="form-input"
+                  value={editModal.blo_name || ""}
+                  onChange={(e) => setEditModal({...editModal, blo_name: e.target.value})}
+                >
+                  <option value="">— Select BLO —</option>
+                  {editModal.blo_name && !BLO_LIST.some(b => b.name === editModal.blo_name) && (
+                    <option value={editModal.blo_name}>{editModal.blo_name}</option>
+                  )}
+                  {BLO_LIST.map(b => (
+                    <option key={b.name} value={b.name}>{b.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
@@ -792,7 +860,7 @@ export default function AdminDashboard() {
             <form onSubmit={executeAddRecord}>
               <div className="form-group">
                 <label className="form-label">Name *</label>
-                <input type="text" name="name" className="form-input" required />
+                <input type="text" name="name" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => e.target.value = e.target.value.toUpperCase()} required />
               </div>
               <div className="form-group">
                 <label className="form-label">Mobile Number *</label>
@@ -800,15 +868,24 @@ export default function AdminDashboard() {
               </div>
               <div className="form-group">
                 <label className="form-label">Voter ID/EPIC No *</label>
-                <input type="text" name="epic_no" className="form-input" required />
+                <input type="text" name="epic_no" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => e.target.value = e.target.value.toUpperCase()} required />
               </div>
               <div className="form-group">
                 <label className="form-label">House No (Optional)</label>
-                <input type="text" name="house_no" className="form-input" />
+                <input type="text" name="house_no" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => e.target.value = e.target.value.toUpperCase()} />
               </div>
               <div className="form-group">
                 <label className="form-label">Booth No (Optional)</label>
-                <input type="text" name="booth_no" className="form-input" />
+                <input type="text" name="booth_no" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => e.target.value = e.target.value.toUpperCase()} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">BLO — Booth Level Officer (Optional)</label>
+                <select name="blo_name" className="form-input" defaultValue="">
+                  <option value="">— Select BLO —</option>
+                  {BLO_LIST.map(b => (
+                    <option key={b.name} value={b.name}>{b.name}</option>
+                  ))}
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>

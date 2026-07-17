@@ -6,6 +6,7 @@ CREATE TABLE submissions (
     epic_no VARCHAR(50),
     house_no VARCHAR(50),
     booth_no VARCHAR(50),
+    blo_name VARCHAR(255),
     id_photo_url TEXT,
     status VARCHAR(50) DEFAULT 'Pending',
     notes TEXT,
@@ -14,9 +15,10 @@ CREATE TABLE submissions (
     CONSTRAINT epic_unique UNIQUE (epic_no)
 );
 
--- Note: If you are adding the unique constraint, notes, and booth_no columns to an existing database, run:
+-- Note: If you are adding the unique constraint, notes, booth_no, and blo_name columns to an existing database, run:
 -- ALTER TABLE submissions ADD COLUMN notes TEXT;
 -- ALTER TABLE submissions ADD COLUMN booth_no VARCHAR(50);
+-- ALTER TABLE submissions ADD COLUMN blo_name VARCHAR(255);
 -- ALTER TABLE submissions ADD CONSTRAINT epic_unique UNIQUE (epic_no);
 
 -- Table: electors_2002

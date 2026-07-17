@@ -503,6 +503,12 @@ export default function AdminDashboard() {
                   ↓ Download Excel
                 </button>
               </a>
+              <a href="/api/admin/export-blo" target="_blank" style={{ flexShrink: 0 }} title="Download voter list grouped by BLO — one sheet per Booth Level Officer">
+                <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#128C7E", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  ↓ BLO-wise List
+                </button>
+              </a>
               <a href="/dashboard" style={{ flexShrink: 0 }}>
                 <button className="btn-primary" style={{ margin: 0, padding: "6px 12px", width: "auto", fontSize: "12px", borderRadius: "6px", background: "#4f46e5", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
