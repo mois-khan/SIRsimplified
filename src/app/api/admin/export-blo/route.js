@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../../../lib/supabase";
-import { bloNumberByName } from "../../../../lib/blo";
+import { bloNumberByName, effectiveBloName } from "../../../../lib/blo";
 import { buildBloVoterWorkbook } from "../../../../lib/bloExport.mjs";
 
 // GET /api/admin/export-blo
@@ -18,7 +18,10 @@ export async function GET() {
       return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
     }
 
-    const workbook = buildBloVoterWorkbook(submissions || [], bloNumberByName);
+    // BLO is derived from each voter's booth so the sheet always reflects the
+    // current booth → BLO mapping, even if stored blo_name is stale/empty.
+    const enriched = (submissions || []).map((s) => ({ ...s, blo_name: effectiveBloName(s) || null }));
+    const workbook = buildBloVoterWorkbook(enriched, bloNumberByName);
     const buffer = await workbook.xlsx.writeBuffer();
 
     return new NextResponse(buffer, {

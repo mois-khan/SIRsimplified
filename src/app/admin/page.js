@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
 import AgentLogin from "../../components/AgentLogin";
-import { BLO_LIST, bloNumberByName, normalizeBlo, bloOptionsFromSubmissions } from "../../lib/blo";
+import { bloNameByBooth, effectiveBlo, effectiveBloName, bloOptionsFromSubmissions } from "../../lib/blo";
 
 // WhatsApp group invite link — set NEXT_PUBLIC_WHATSAPP_LINK in .env.local.
 // Note: renaming the group does NOT change this link; only "Reset link" does.
@@ -111,6 +111,7 @@ export default function AdminDashboard() {
   const [deleteRecordModal, setDeleteRecordModal] = useState(null);
   const [addModal, setAddModal] = useState(false);
   const [addPhotoName, setAddPhotoName] = useState("");
+  const [addBloHint, setAddBloHint] = useState(""); // BLO auto-assigned from booth in the Add modal
   const [expandedNotes, setExpandedNotes] = useState(new Set());
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [qrModal, setQrModal] = useState(false);
@@ -186,10 +187,6 @@ export default function AdminDashboard() {
 
   const confirmStatusChange = (id, newStatus) => {
     setConfirmModal({ id, field: "status", label: "Status", newValue: newStatus });
-  };
-
-  const confirmBloChange = (id, newBlo) => {
-    setConfirmModal({ id, field: "blo_name", label: "BLO", newValue: newBlo });
   };
 
   const executeConfirmChange = async () => {
@@ -278,7 +275,7 @@ export default function AdminDashboard() {
           epic_no: editModal.epic_no,
           house_no: editModal.house_no,
           booth_no: editModal.booth_no,
-          blo_name: editModal.blo_name || null,
+          blo_name: bloNameByBooth(editModal.booth_no) || editModal.blo_name || null,
           status: editModal.status,
           notes: editModal.notes
         })
@@ -346,6 +343,7 @@ export default function AdminDashboard() {
         showToast("Record added successfully!");
         setAddModal(false);
         setAddPhotoName("");
+        setAddBloHint("");
         fetchData(); // Refresh the list to get the new record with its ID
         // Auto-prompt the agent to send this voter the WhatsApp group invite.
         if (data.data && isInviteConfigured) setInvitePrompt(data.data);
@@ -380,7 +378,8 @@ export default function AdminDashboard() {
       showToast("This record has no valid mobile number.");
       return;
     }
-    const msg = buildInviteMessage(sub.name, sub.blo_name, bloNumberByName(sub.blo_name));
+    const blo = effectiveBlo(sub);
+    const msg = buildInviteMessage(sub.name, blo?.name, blo?.number);
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, "_blank");
   };
 
@@ -443,9 +442,9 @@ export default function AdminDashboard() {
       if (sStatus !== statusFilter) return false;
     }
 
-    // 1b. Check BLO filter
+    // 1b. Check BLO filter (BLO is derived from booth)
     if (bloFilter !== "All") {
-      const sBlo = normalizeBlo(s.blo_name);
+      const sBlo = effectiveBloName(s);
       if (bloFilter === "Unassigned") {
         if (sBlo) return false;
       } else if (sBlo !== bloFilter) {
@@ -663,33 +662,24 @@ export default function AdminDashboard() {
               </div>
 
               <div className="data-field" style={{ marginTop: "12px" }}>
-                <span className="data-label">BLO (Booth Level Officer)</span>
-                {sub.blo_name && bloNumberByName(sub.blo_name) ? (
-                  <a
-                    href={`tel:${bloNumberByName(sub.blo_name)}`}
-                    className="data-value"
-                    title={`Call ${sub.blo_name}`}
-                    style={{ color: "var(--accent-color)", textDecoration: "none", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                    {sub.blo_name}
-                  </a>
-                ) : sub.blo_name ? (
-                  <span className="data-value" style={{ marginBottom: "6px" }}>{sub.blo_name}</span>
-                ) : null}
-                <select
-                  className="status-select"
-                  value={sub.blo_name || ""}
-                  onChange={(e) => confirmBloChange(sub.id, e.target.value)}
-                >
-                  <option value="">— Select BLO —</option>
-                  {sub.blo_name && !BLO_LIST.some(b => b.name === sub.blo_name) && (
-                    <option value={sub.blo_name}>{sub.blo_name}</option>
-                  )}
-                  {BLO_LIST.map(b => (
-                    <option key={b.name} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
+                <span className="data-label">BLO (auto-assigned by Booth)</span>
+                {(() => {
+                  const blo = effectiveBlo(sub);
+                  if (!blo) return <span className="data-value" style={{ color: "var(--text-secondary)" }}>Not assigned</span>;
+                  return blo.number ? (
+                    <a
+                      href={`tel:${blo.number}`}
+                      className="data-value"
+                      title={`Call ${blo.name}`}
+                      style={{ color: "var(--accent-color)", textDecoration: "none", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "6px" }}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                      {blo.name}
+                    </a>
+                  ) : (
+                    <span className="data-value" style={{ fontWeight: 700 }}>{blo.name}</span>
+                  );
+                })()}
               </div>
 
               <div className="data-field" style={{ marginTop: "12px" }}>
@@ -829,20 +819,11 @@ export default function AdminDashboard() {
                 <input type="text" className="form-input" style={{ textTransform: "uppercase" }} value={editModal.booth_no || ""} onChange={e => setEditModal({...editModal, booth_no: e.target.value.toUpperCase()})} />
               </div>
               <div className="form-group">
-                <label className="form-label">BLO (Booth Level Officer)</label>
-                <select
-                  className="form-input"
-                  value={editModal.blo_name || ""}
-                  onChange={(e) => setEditModal({...editModal, blo_name: e.target.value})}
-                >
-                  <option value="">— Select BLO —</option>
-                  {editModal.blo_name && !BLO_LIST.some(b => b.name === editModal.blo_name) && (
-                    <option value={editModal.blo_name}>{editModal.blo_name}</option>
-                  )}
-                  {BLO_LIST.map(b => (
-                    <option key={b.name} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
+                <label className="form-label">BLO (auto-assigned by Booth No)</label>
+                <div className="form-input" style={{ background: "var(--bg-color)", color: "var(--text-secondary)", display: "flex", alignItems: "center", minHeight: "44px" }}>
+                  {effectiveBloName({ booth_no: editModal.booth_no, blo_name: editModal.blo_name }) || "— Not assigned (enter a booth mapped to a BLO) —"}
+                </div>
+                <div className="form-help">Change the Booth No above to reassign the BLO</div>
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
@@ -878,7 +859,7 @@ export default function AdminDashboard() {
 
       {/* Add Record Modal */}
       {addModal && (
-        <div className="modal-overlay" onClick={() => { setAddModal(false); setAddPhotoName(""); }}>
+        <div className="modal-overlay" onClick={() => { setAddModal(false); setAddPhotoName(""); setAddBloHint(""); }}>
           <div className="modal-content" style={{ maxWidth: "500px", padding: "24px" }} onClick={e => e.stopPropagation()}>
             <h2 className="title" style={{ fontSize: "18px", marginBottom: "16px" }}>Add New Submission</h2>
             <form onSubmit={executeAddRecord}>
@@ -900,16 +881,10 @@ export default function AdminDashboard() {
               </div>
               <div className="form-group">
                 <label className="form-label">Booth No (Optional)</label>
-                <input type="text" name="booth_no" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => e.target.value = e.target.value.toUpperCase()} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">BLO — Booth Level Officer (Optional)</label>
-                <select name="blo_name" className="form-input" defaultValue="">
-                  <option value="">— Select BLO —</option>
-                  {BLO_LIST.map(b => (
-                    <option key={b.name} value={b.name}>{b.name}</option>
-                  ))}
-                </select>
+                <input type="text" name="booth_no" className="form-input" style={{ textTransform: "uppercase" }} onInput={(e) => { e.target.value = e.target.value.toUpperCase(); setAddBloHint(bloNameByBooth(e.target.value)); }} />
+                {addBloHint
+                  ? <div className="form-help" style={{ color: "var(--success-color)", fontWeight: 600 }}>✓ BLO for this booth: {addBloHint}</div>
+                  : <div className="form-help">BLO is auto-assigned from the booth number</div>}
               </div>
               <div className="form-group">
                 <label className="form-label">Status</label>
@@ -942,7 +917,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="modal-actions" style={{ marginTop: "24px" }}>
-                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => { setAddModal(false); setAddPhotoName(""); }}>Cancel</button>
+                <button type="button" className="btn-primary" style={{ background: "var(--text-secondary)" }} onClick={() => { setAddModal(false); setAddPhotoName(""); setAddBloHint(""); }}>Cancel</button>
                 <button type="submit" className="btn-primary">Add Record</button>
               </div>
             </form>

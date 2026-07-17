@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import AgentLogin from "../../components/AgentLogin";
-import { BLO_LIST } from "../../lib/blo";
+import { bloNameByBooth } from "../../lib/blo";
 
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
@@ -47,6 +47,7 @@ export default function Home() {
   const [agent, setAgent] = useState(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formErrors, setFormErrors] = useState({});
+  const [bloHint, setBloHint] = useState(""); // BLO auto-assigned from booth
 
   useEffect(() => {
     const cached = localStorage.getItem("agent_auth");
@@ -120,6 +121,7 @@ export default function Home() {
     setIsSuccess(false);
     setPhotoName("");
     setFormErrors({});
+    setBloHint("");
   };
 
   if (isSuccess) {
@@ -310,7 +312,7 @@ export default function Home() {
           <div className="form-help">Helps identify the correct location</div>
         </div>
 
-        {/* Booth Number Field */}
+        {/* Booth Number Field — auto-assigns the BLO */}
         <div className="form-group">
           <label className="form-label">Booth Number (Optional)</label>
           <input
@@ -318,26 +320,12 @@ export default function Home() {
             name="booth_no"
             className="form-input"
             placeholder="e.g. 45"
-            onInput={(e) => e.target.value = e.target.value.toUpperCase()}
+            onInput={(e) => { e.target.value = e.target.value.toUpperCase(); setBloHint(bloNameByBooth(e.target.value)); }}
             aria-label="Booth Number"
           />
-        </div>
-
-        {/* BLO (Booth Level Officer) Field */}
-        <div className="form-group">
-          <label className="form-label">BLO — Booth Level Officer (Optional)</label>
-          <select
-            name="blo_name"
-            className="form-input"
-            defaultValue=""
-            aria-label="Booth Level Officer"
-          >
-            <option value="">— Select BLO —</option>
-            {BLO_LIST.map(b => (
-              <option key={b.name} value={b.name}>{b.name}</option>
-            ))}
-          </select>
-          <div className="form-help">Select the BLO assigned to this voter&apos;s booth</div>
+          {bloHint
+            ? <div className="form-help" style={{ color: "var(--success-color)", fontWeight: 600 }}>✓ BLO for this booth: {bloHint}</div>
+            : <div className="form-help">The BLO is assigned automatically from the booth number</div>}
         </div>
 
         {/* File Upload */}

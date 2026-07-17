@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "../../../lib/supabase";
+import { bloNameByBooth } from "../../../lib/blo";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 // Configure Cloudflare R2 Client
@@ -20,7 +21,8 @@ export async function POST(request) {
     const epic_no = formData.get("epic_no")?.toUpperCase();
     const house_no = formData.get("house_no")?.toUpperCase() || null;
     const booth_no = formData.get("booth_no")?.toUpperCase() || null;
-    const blo_name = formData.get("blo_name")?.toUpperCase() || null;
+    // BLO is auto-assigned from the booth number (see NEXT_PUBLIC_BLO_LIST).
+    const blo_name = bloNameByBooth(booth_no) || null;
     const photo = formData.get("photo");
     const status = formData.get("status") || "Pending";
     const notes = formData.get("notes") || null;

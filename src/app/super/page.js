@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabase";
-import { BLO_LIST, bloNumberByName, normalizeBlo, bloOptionsFromSubmissions } from "../../lib/blo";
+import { bloNameByBooth, bloNumberByName, normalizeBlo, effectiveBloName, bloOptionsFromSubmissions } from "../../lib/blo";
 
 const compressImage = async (file, maxWidth = 800) => {
   return new Promise((resolve, reject) => {
@@ -48,6 +48,7 @@ export default function AdminDashboard() {
   const [agentFilter, setAgentFilter] = useState("All");
   const [bloFilter, setBloFilter] = useState("All"); // BLO filter for the submissions list
   const [bloView, setBloView] = useState(""); // selected BLO in the "BLO Wise" tab
+  const [backfilling, setBackfilling] = useState(false); // "Assign BLOs by booth" in progress
   const [activeTab, setActiveTab] = useState("submissions"); // "submissions" | "agents" | "blo"
   const [agentsList, setAgentsList] = useState([]);
   const [toast, setToast] = useState(null);
@@ -231,6 +232,7 @@ export default function AdminDashboard() {
           epic_no: editModal.epic_no,
           house_no: editModal.house_no,
           booth_no: editModal.booth_no,
+          blo_name: bloNameByBooth(editModal.booth_no) || editModal.blo_name || null,
           status: editModal.status,
           notes: editModal.notes,
           submitted_by: editModal.submitted_by
@@ -344,6 +346,41 @@ export default function AdminDashboard() {
     }
   };
 
+  // One-off: assign BLO to existing records from their booth number, using the
+  // current booth → BLO mapping (NEXT_PUBLIC_BLO_LIST). Non-destructive — only
+  // updates records whose booth maps to a BLO different from what's stored.
+  const backfillBlosByBooth = async () => {
+    const targets = submissions.filter(s => {
+      const derived = bloNameByBooth(s.booth_no);
+      return derived && derived !== normalizeBlo(s.blo_name);
+    });
+    if (targets.length === 0) {
+      showToast("All records already match their booth's BLO.");
+      return;
+    }
+    if (!confirm(`Assign BLOs by booth to ${targets.length} record(s)? Their BLO will be set from the current booth → BLO mapping.`)) return;
+
+    setBackfilling(true);
+    let done = 0;
+    try {
+      for (const s of targets) {
+        const derived = bloNameByBooth(s.booth_no);
+        const { error } = await supabase.from("submissions").update({ blo_name: derived }).eq("id", s.id);
+        if (!error) done++;
+      }
+      setSubmissions(subs => subs.map(s => {
+        const derived = bloNameByBooth(s.booth_no);
+        return derived ? { ...s, blo_name: derived } : s;
+      }));
+      showToast(`Assigned BLO to ${done} record(s).`);
+    } catch (err) {
+      console.error("Backfill error:", err);
+      showToast("Backfill failed. Please try again.");
+    } finally {
+      setBackfilling(false);
+    }
+  };
+
   const getStatusColor = (status) => {
     if (status === 'DONE & ONLINE SIR COMPLETE') return '#10b981'; // Green
     if (status === 'Done' || status === 'Found in 2002 Roll') return 'var(--success-color)';
@@ -385,7 +422,7 @@ export default function AdminDashboard() {
   const { names: bloNames, hasUnassigned } = bloOptionsFromSubmissions(submissions);
   const bloViewVoters = bloView
     ? submissions
-        .filter(s => bloView === "Unassigned" ? !normalizeBlo(s.blo_name) : normalizeBlo(s.blo_name) === bloView)
+        .filter(s => bloView === "Unassigned" ? !effectiveBloName(s) : effectiveBloName(s) === bloView)
         .sort((a, b) => (a.name || "").localeCompare(b.name || ""))
     : [];
   const bloViewNumber = bloView && bloView !== "Unassigned" ? bloNumberByName(bloView) : "";
@@ -408,9 +445,9 @@ export default function AdminDashboard() {
       if (sStatus !== statusFilter) return false;
     }
 
-    // 1b. Check BLO filter
+    // 1b. Check BLO filter (BLO is derived from booth)
     if (bloFilter !== "All") {
-      const sBlo = normalizeBlo(s.blo_name);
+      const sBlo = effectiveBloName(s);
       if (bloFilter === "Unassigned") {
         if (sBlo) return false;
       } else if (sBlo !== bloFilter) {
@@ -532,12 +569,24 @@ export default function AdminDashboard() {
                 {hasUnassigned && <option value="Unassigned">Unassigned (no BLO)</option>}
               </select>
             </div>
-            <a href="/api/admin/export-blo" target="_blank" style={{ flexShrink: 0 }} title="Download the full BLO-wise voter list as Excel">
-              <button className="btn-primary" style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "13px", borderRadius: "6px", background: "#128C7E", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                ↓ Download BLO Excel
+            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <button
+                onClick={backfillBlosByBooth}
+                disabled={backfilling}
+                title="Assign BLO to existing records from their booth number"
+                className="btn-primary"
+                style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "13px", borderRadius: "6px", background: "#4f46e5", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap", opacity: backfilling ? 0.7 : 1 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                {backfilling ? "Assigning…" : "Assign BLOs by Booth"}
               </button>
-            </a>
+              <a href="/api/admin/export-blo" target="_blank" style={{ flexShrink: 0 }} title="Download the full BLO-wise voter list as Excel">
+                <button className="btn-primary" style={{ margin: 0, padding: "8px 16px", width: "auto", fontSize: "13px", borderRadius: "6px", background: "#128C7E", display: "flex", alignItems: "center", gap: "6px", whiteSpace: "nowrap" }}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                  ↓ Download BLO Excel
+                </button>
+              </a>
+            </div>
           </div>
 
           {bloView ? (
